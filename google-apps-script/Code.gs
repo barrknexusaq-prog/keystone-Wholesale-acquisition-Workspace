@@ -651,9 +651,16 @@ function onEdit(e) {
   }
 
   // Auto-move to Contract Pipeline when "Contract Signed" = Yes
-  if (sheetName === CONFIG.SHEETS.MAIN_PAGE && col === 16) { // Contract Signed column
+  // Handle from all three lead sheets
+  const contractSignedColumns = {
+    [CONFIG.SHEETS.ON_MARKET]: 24,    // Column X - Contract Signed (Yes/No)
+    [CONFIG.SHEETS.OFF_MARKET]: 26,   // Column Z - Contract Signed (Yes/No)
+    [CONFIG.SHEETS.MAIN_PAGE]: 16     // Column P - Contract Signed (Yes/No)
+  };
+
+  if (contractSignedColumns[sheetName] && col === contractSignedColumns[sheetName]) {
     if (e.value === 'Yes') {
-      autoMoveToContractPipeline(sheet, row);
+      moveLeadToContractPipeline(sheet, row, sheetName);
     }
   }
 }
@@ -687,9 +694,12 @@ function calculateMAO(sheet, row) {
 }
 
 /**
- * Automatically move lead to Contract Pipeline when contract is signed
+ * Move lead to Contract Pipeline - handles all three source sheets
+ * @param {Sheet} sourceSheet - The sheet where contract was signed
+ * @param {number} row - The row number
+ * @param {string} sheetName - Name of the source sheet
  */
-function autoMoveToContractPipeline(sourceSheet, row) {
+function moveLeadToContractPipeline(sourceSheet, row, sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const pipeline = ss.getSheetByName(CONFIG.SHEETS.CONTRACT_PIPELINE);
 
@@ -697,39 +707,168 @@ function autoMoveToContractPipeline(sourceSheet, row) {
 
   const rowData = sourceSheet.getRange(row, 1, 1, sourceSheet.getLastColumn()).getValues()[0];
 
-  // Map main page columns to pipeline columns
-  const pipelineData = [
-    'CP-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyMMdd-HHmm'), // Deal ID
-    rowData[0],  // Original Lead ID
-    new Date(),  // Date Under Contract
-    rowData[4],  // Property Address
-    rowData[5],  // City
-    rowData[6],  // County
-    '',          // State
-    rowData[7],  // Zip Code
-    rowData[9],  // Purchase Price
-    rowData[10], // ARV
-    '',          // Repair Estimate
-    '',          // Expected Profit
-    '',          // Earnest Money
-    '',          // Inspection Period End
-    '',          // Close Date
-    '',          // Disposition Strategy
-    '',          // Disposition Outcome
-    rowData[17], // Buyer Name
-    '',          // Buyer Phone
-    '',          // Assignment Fee
-    '',          // Final Sale Price
-    '',          // Actual Profit
-    'Under Contract', // Status
-    '',          // Title Company
-    '',          // Title Contact
-    '',          // Attorney
-    rowData[20], // Notes
-    ''           // Days to Close
-  ];
+  let pipelineData;
 
+  if (sheetName === CONFIG.SHEETS.ON_MARKET) {
+    // On Market Leads column mapping
+    // Columns: Lead ID(0), Date(1), Source(2), MLS#(3), Address(4), City(5), County(6), State(7), Zip(8),
+    //          PropType(9), Beds(10), Baths(11), Sqft(12), YearBuilt(13), ListPrice(14), DOM(15),
+    //          ARV(16), Repairs(17), MAO(18), OfferAmt(19), Qualified(20), PassedTL(21), OfferMade(22),
+    //          ContractSigned(23), Status(24), Notes(25), AgentName(26), AgentPhone(27), URL(28)
+    pipelineData = [
+      'CP-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyMMdd-HHmm'), // Deal ID
+      rowData[0],   // Original Lead ID
+      new Date(),   // Date Under Contract
+      rowData[4],   // Property Address
+      rowData[5],   // City
+      rowData[6],   // County
+      rowData[7],   // State
+      rowData[8],   // Zip Code
+      rowData[19] || rowData[14], // Purchase Price (Offer Amount or List Price)
+      rowData[16],  // ARV
+      rowData[17],  // Repair Estimate
+      '',           // Expected Profit (calculated)
+      '',           // Earnest Money
+      '',           // Inspection Period End
+      '',           // Close Date
+      '',           // Disposition Strategy
+      '',           // Disposition Outcome
+      '',           // Buyer Name
+      '',           // Buyer Phone
+      '',           // Assignment Fee
+      '',           // Final Sale Price
+      '',           // Actual Profit
+      'Under Contract', // Status
+      '',           // Title Company
+      '',           // Title Contact
+      '',           // Attorney
+      rowData[25],  // Notes
+      ''            // Days to Close
+    ];
+
+    // Update status on source sheet
+    sourceSheet.getRange(row, 25).setValue('Under Contract');
+
+  } else if (sheetName === CONFIG.SHEETS.OFF_MARKET) {
+    // Off Market Leads column mapping
+    // Columns: Lead ID(0), Date(1), Source(2), SourceContact(3), SourcePhone(4), SourceEmail(5),
+    //          Address(6), City(7), County(8), State(9), Zip(10), PropType(11), Beds(12), Baths(13),
+    //          Sqft(14), YearBuilt(15), AskingPrice(16), ARV(17), Repairs(18), MAO(19), OfferAmt(20),
+    //          AssignmentFee(21), Qualified(22), PassedTL(23), OfferMade(24), ContractSigned(25),
+    //          Status(26), Motivation(27), SellerName(28), SellerPhone(29), Notes(30)
+    pipelineData = [
+      'CP-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyMMdd-HHmm'), // Deal ID
+      rowData[0],   // Original Lead ID
+      new Date(),   // Date Under Contract
+      rowData[6],   // Property Address
+      rowData[7],   // City
+      rowData[8],   // County
+      rowData[9],   // State
+      rowData[10],  // Zip Code
+      rowData[20] || rowData[16], // Purchase Price (Offer Amount or Asking Price)
+      rowData[17],  // ARV
+      rowData[18],  // Repair Estimate
+      '',           // Expected Profit (calculated)
+      '',           // Earnest Money
+      '',           // Inspection Period End
+      '',           // Close Date
+      '',           // Disposition Strategy
+      '',           // Disposition Outcome
+      '',           // Buyer Name
+      '',           // Buyer Phone
+      rowData[21],  // Assignment Fee
+      '',           // Final Sale Price
+      '',           // Actual Profit
+      'Under Contract', // Status
+      '',           // Title Company
+      '',           // Title Contact
+      '',           // Attorney
+      rowData[30],  // Notes
+      ''            // Days to Close
+    ];
+
+    // Update status on source sheet
+    sourceSheet.getRange(row, 27).setValue('Under Contract');
+
+  } else {
+    // Main Page column mapping
+    // Columns: Lead ID(0), Date(1), LeadType(2), Source(3), Address(4), City(5), County(6), Zip(7),
+    //          PropType(8), Price(9), ARV(10), MAO(11), Qualified(12), PassedTL(13), OfferMade(14),
+    //          ContractSigned(15), DispOutcome(16), BuyerName(17), FinalPrice(18), Status(19), Notes(20)
+    pipelineData = [
+      'CP-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyMMdd-HHmm'), // Deal ID
+      rowData[0],   // Original Lead ID
+      new Date(),   // Date Under Contract
+      rowData[4],   // Property Address
+      rowData[5],   // City
+      rowData[6],   // County
+      '',           // State
+      rowData[7],   // Zip Code
+      rowData[9],   // Purchase Price
+      rowData[10],  // ARV
+      '',           // Repair Estimate
+      '',           // Expected Profit
+      '',           // Earnest Money
+      '',           // Inspection Period End
+      '',           // Close Date
+      '',           // Disposition Strategy
+      '',           // Disposition Outcome
+      rowData[17],  // Buyer Name
+      '',           // Buyer Phone
+      '',           // Assignment Fee
+      rowData[18],  // Final Sale Price
+      '',           // Actual Profit
+      'Under Contract', // Status
+      '',           // Title Company
+      '',           // Title Contact
+      '',           // Attorney
+      rowData[20],  // Notes
+      ''            // Days to Close
+    ];
+
+    // Update status on Main Page
+    sourceSheet.getRange(row, 20).setValue('Under Contract');
+  }
+
+  // Add to Contract Pipeline
   pipeline.appendRow(pipelineData);
+
+  // Also update Main Page if the source was On Market or Off Market
+  if (sheetName !== CONFIG.SHEETS.MAIN_PAGE) {
+    syncToMainPage(rowData, sheetName);
+  }
+}
+
+/**
+ * Sync contract status to Main Page when updated from On/Off Market sheets
+ */
+function syncToMainPage(rowData, sourceSheetName) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const mainPage = ss.getSheetByName(CONFIG.SHEETS.MAIN_PAGE);
+
+  if (!mainPage) return;
+
+  // Get the Lead ID to find in Main Page
+  const leadId = rowData[0];
+  if (!leadId) return;
+
+  // Find the lead in Main Page
+  const mainData = mainPage.getDataRange().getValues();
+  for (let i = 1; i < mainData.length; i++) {
+    if (mainData[i][0] === leadId) {
+      // Update Contract Signed and Status columns
+      mainPage.getRange(i + 1, 16).setValue('Yes');  // Contract Signed column
+      mainPage.getRange(i + 1, 20).setValue('Under Contract');  // Status column
+      break;
+    }
+  }
+}
+
+/**
+ * Legacy function - redirects to new function for backward compatibility
+ */
+function autoMoveToContractPipeline(sourceSheet, row) {
+  moveLeadToContractPipeline(sourceSheet, row, CONFIG.SHEETS.MAIN_PAGE);
 }
 
 /**
