@@ -1376,30 +1376,175 @@ function showZipCodeImport() {
   const html = HtmlService.createHtmlOutput(`
     <style>
       body { font-family: Arial, sans-serif; padding: 15px; }
-      textarea { width: 100%; height: 200px; }
-      .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+      textarea { width: 100%; height: 200px; font-family: monospace; font-size: 12px; }
+      .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; margin-right: 10px; }
       .btn-primary { background: #4A1F5C; color: white; }
+      .btn-secondary { background: #6c757d; color: white; }
+      .tabs { display: flex; margin-bottom: 15px; }
+      .tab { padding: 10px 20px; cursor: pointer; border: 1px solid #ddd; background: #f5f5f5; }
+      .tab.active { background: #4A1F5C; color: white; }
+      .tab-content { display: none; }
+      .tab-content.active { display: block; }
+      small { color: #666; display: block; margin-top: 5px; }
     </style>
     <h3>Import Zip Codes</h3>
-    <p>Enter zip codes (one per line or comma-separated):</p>
-    <textarea id="zips" placeholder="75001&#10;75002&#10;75003"></textarea>
-    <br>
-    <button class="btn btn-primary" onclick="importZips()">Import</button>
+
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('csv')">CSV Import</div>
+      <div class="tab" onclick="showTab('simple')">Simple List</div>
+    </div>
+
+    <div id="csv-tab" class="tab-content active">
+      <p>Paste CSV data (with headers):</p>
+      <textarea id="csvData" placeholder="Zip Code,City,County,State,Market Status,Priority Level,Avg Home Value,Avg Days on Market,Total Leads,Contracts Won,Success Rate,Notes,Last Updated
+37013,Antioch,Davidson,TN,Active,High,350000,25,0,0,0%,Nashville suburb,
+37027,Brentwood,Williamson,TN,Active,Medium,650000,30,0,0,0%,Affluent area,"></textarea>
+      <small>Format: Zip Code,City,County,State,Market Status,Priority Level,Avg Home Value,... (lines starting with # are ignored)</small>
+      <br>
+      <button class="btn btn-primary" onclick="importCSV()">Import CSV</button>
+      <button class="btn btn-secondary" onclick="clearExisting()">Clear Existing First</button>
+    </div>
+
+    <div id="simple-tab" class="tab-content">
+      <p>Enter zip codes (one per line or comma-separated):</p>
+      <textarea id="zips" placeholder="37013&#10;37027&#10;37064"></textarea>
+      <br>
+      <button class="btn btn-primary" onclick="importSimple()">Import Zip Codes</button>
+    </div>
+
     <script>
-      function importZips() {
-        const zips = document.getElementById('zips').value;
+      function showTab(tab) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelector('.tab:nth-child(' + (tab === 'csv' ? '1' : '2') + ')').classList.add('active');
+        document.getElementById(tab + '-tab').classList.add('active');
+      }
+
+      function importCSV() {
+        const csv = document.getElementById('csvData').value;
+        if (!csv.trim()) { alert('Please paste CSV data'); return; }
         google.script.run
           .withSuccessHandler(count => { alert(count + ' zip codes imported!'); google.script.host.close(); })
+          .withFailureHandler(err => alert('Error: ' + err.message))
+          .importZipCodesCSV(csv);
+      }
+
+      function importSimple() {
+        const zips = document.getElementById('zips').value;
+        if (!zips.trim()) { alert('Please enter zip codes'); return; }
+        google.script.run
+          .withSuccessHandler(count => { alert(count + ' zip codes imported!'); google.script.host.close(); })
+          .withFailureHandler(err => alert('Error: ' + err.message))
           .importZipCodes(zips);
       }
+
+      function clearExisting() {
+        if (confirm('This will delete all existing zip codes. Continue?')) {
+          google.script.run
+            .withSuccessHandler(() => alert('All zip codes cleared!'))
+            .withFailureHandler(err => alert('Error: ' + err.message))
+            .clearZipCodes();
+        }
+      }
     </script>
-  `).setWidth(400).setHeight(350);
+  `).setWidth(500).setHeight(450);
 
   SpreadsheetApp.getUi().showModalDialog(html, 'Import Zip Codes');
 }
 
 /**
- * Import zip codes
+ * Import zip codes from CSV format
+ */
+function importZipCodesCSV(csvText) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.SHEETS.ZIP_CODES);
+  if (!sheet) throw new Error('Zip Codes sheet not found');
+
+  const lines = csvText.split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !line.startsWith('#')); // Skip empty lines and comments
+
+  if (lines.length === 0) throw new Error('No data found in CSV');
+
+  // Check if first line is header
+  const firstLine = lines[0].toLowerCase();
+  const startIndex = firstLine.includes('zip') ? 1 : 0;
+
+  const existingZips = sheet.getRange('A2:A' + Math.max(2, sheet.getLastRow())).getValues().flat().filter(z => z);
+
+  let added = 0;
+  for (let i = startIndex; i < lines.length; i++) {
+    const parts = parseCSVLine(lines[i]);
+    if (parts.length === 0) continue;
+
+    const zip = parts[0].toString().trim();
+    if (!/^\d{5}$/.test(zip)) continue; // Skip invalid zip codes
+    if (existingZips.includes(zip) || existingZips.includes(parseInt(zip))) continue; // Skip duplicates
+
+    const row = [
+      zip,                                    // A: Zip Code
+      parts[1] || '',                         // B: City
+      parts[2] || '',                         // C: County
+      parts[3] || '',                         // D: State
+      parts[4] || 'Active',                   // E: Market Status
+      parts[5] || 'Medium',                   // F: Priority Level
+      parts[6] ? parseFloat(parts[6]) : '',   // G: Avg Home Value
+      parts[7] ? parseInt(parts[7]) : '',     // H: Avg Days on Market
+      parts[8] ? parseInt(parts[8]) : 0,      // I: Total Leads
+      parts[9] ? parseInt(parts[9]) : 0,      // J: Contracts Won
+      parts[10] || '0%',                      // K: Success Rate
+      parts[11] || '',                        // L: Notes
+      new Date()                              // M: Last Updated
+    ];
+
+    sheet.appendRow(row);
+    existingZips.push(zip); // Track to avoid duplicates within import
+    added++;
+  }
+
+  return added;
+}
+
+/**
+ * Parse a CSV line handling quoted values
+ */
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+
+  return result;
+}
+
+/**
+ * Clear all zip codes
+ */
+function clearZipCodes() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.SHEETS.ZIP_CODES);
+  if (!sheet) throw new Error('Zip Codes sheet not found');
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.deleteRows(2, lastRow - 1);
+  }
+}
+
+/**
+ * Import zip codes (simple list)
  */
 function importZipCodes(zipText) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1407,12 +1552,13 @@ function importZipCodes(zipText) {
   if (!sheet) throw new Error('Zip Codes sheet not found');
 
   const zips = zipText.split(/[\n,]+/).map(z => z.trim()).filter(z => z && /^\d{5}$/.test(z));
-  const existingZips = sheet.getRange('A2:A' + sheet.getLastRow()).getValues().flat().filter(z => z);
+  const existingZips = sheet.getRange('A2:A' + Math.max(2, sheet.getLastRow())).getValues().flat().filter(z => z);
 
   let added = 0;
   zips.forEach(zip => {
-    if (!existingZips.includes(zip)) {
-      sheet.appendRow([zip, '', '', '', 'Active', 'Medium', '', '', '', '', '', '', new Date()]);
+    if (!existingZips.includes(zip) && !existingZips.includes(parseInt(zip))) {
+      sheet.appendRow([zip, '', '', '', 'Active', 'Medium', '', '', 0, 0, '0%', '', new Date()]);
+      existingZips.push(zip);
       added++;
     }
   });
