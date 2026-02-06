@@ -1,77 +1,76 @@
 /**
- * Utilities.gs - Helper Functions & Data Processing
- *
- * This file contains utility functions for data manipulation,
- * calculations, and integration helpers
+ * Utilities.gs - Helper Functions & Custom Formulas
+ * Acquisition Workspace v4.0
  */
 
 // ============================================================================
-// PROPERTY ANALYSIS FUNCTIONS
+// CUSTOM SPREADSHEET FORMULAS
 // ============================================================================
 
 /**
- * Calculate Maximum Allowable Offer using the 70% rule
- * @param {number} arv - After Repair Value
- * @param {number} repairs - Estimated repair costs
- * @param {number} wholesaleFee - Your target wholesale fee (default $10,000)
- * @return {number} Maximum allowable offer
- */
-function calculateMAOFormula(arv, repairs, wholesaleFee = 10000) {
-  if (!arv || arv <= 0) return 0;
-  const mao = (arv * 0.7) - (repairs || 0) - wholesaleFee;
-  return Math.max(0, mao);
-}
-
-/**
- * Custom function for use in spreadsheet cells
+ * Calculate Maximum Allowable Offer (70% Rule)
  * Usage: =MAO(ARV, Repairs, WholesaleFee)
+ * @param {number} arv - After Repair Value
+ * @param {number} repairs - Repair cost estimate
+ * @param {number} fee - Your wholesale fee (default 10000)
+ * @return {number} Maximum allowable offer
+ * @customfunction
  */
-function MAO(arv, repairs, wholesaleFee) {
-  return calculateMAOFormula(arv, repairs, wholesaleFee || 10000);
+function MAO(arv, repairs, fee) {
+  if (!arv || arv <= 0) return 0;
+  const wholesaleFee = fee || 10000;
+  return Math.max(0, (arv * 0.7) - (repairs || 0) - wholesaleFee);
 }
 
 /**
- * Calculate potential profit on a deal
- * @param {number} purchasePrice
- * @param {number} arv
- * @param {number} repairs
- * @param {number} holdingCosts
- * @param {number} sellingCosts
- * @return {number} Potential profit
+ * Calculate potential profit
+ * Usage: =PROFIT(PurchasePrice, ARV, Repairs, HoldingCosts, SellingCosts)
+ * @customfunction
  */
-function POTENTIAL_PROFIT(purchasePrice, arv, repairs, holdingCosts, sellingCosts) {
+function PROFIT(purchasePrice, arv, repairs, holdingCosts, sellingCosts) {
   if (!purchasePrice || !arv) return 0;
-  const totalCosts = purchasePrice + (repairs || 0) + (holdingCosts || 0);
-  const netSale = arv - (sellingCosts || arv * 0.08); // Default 8% selling costs
-  return netSale - totalCosts;
+  const costs = (purchasePrice || 0) + (repairs || 0) + (holdingCosts || 0);
+  const sellCosts = sellingCosts || (arv * 0.08); // Default 8%
+  return arv - sellCosts - costs;
 }
 
 /**
- * Calculate assignment fee potential
- * @param {number} contractPrice - Your contract price with seller
- * @param {number} endBuyerPrice - Price you can sell assignment for
- * @return {number} Assignment fee
+ * Calculate assignment fee
+ * Usage: =ASSIGNMENT_FEE(ContractPrice, EndBuyerPrice)
+ * @customfunction
  */
 function ASSIGNMENT_FEE(contractPrice, endBuyerPrice) {
   return (endBuyerPrice || 0) - (contractPrice || 0);
 }
 
 /**
- * Calculate cash-on-cash return for rental analysis
+ * Calculate days until deadline
+ * Usage: =DAYS_UNTIL(date)
+ * @customfunction
  */
-function CASH_ON_CASH(annualCashFlow, totalCashInvested) {
-  if (!totalCashInvested || totalCashInvested <= 0) return 0;
-  return annualCashFlow / totalCashInvested;
+function DAYS_UNTIL(deadline) {
+  if (!deadline) return '';
+  const today = new Date();
+  const target = new Date(deadline);
+  return Math.floor((target - today) / (24 * 60 * 60 * 1000));
 }
 
-// ============================================================================
-// DATA FORMATTING FUNCTIONS
-// ============================================================================
+/**
+ * Calculate days between dates
+ * Usage: =DAYS_BETWEEN(start, end)
+ * @customfunction
+ */
+function DAYS_BETWEEN(startDate, endDate) {
+  if (!startDate || !endDate) return '';
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  return Math.floor((end - start) / (24 * 60 * 60 * 1000));
+}
 
 /**
- * Format phone number to (XXX) XXX-XXXX
- * @param {string} phone - Raw phone number
- * @return {string} Formatted phone number
+ * Format phone number
+ * Usage: =FORMAT_PHONE(phone)
+ * @customfunction
  */
 function FORMAT_PHONE(phone) {
   if (!phone) return '';
@@ -83,29 +82,9 @@ function FORMAT_PHONE(phone) {
 }
 
 /**
- * Format address properly
- * @param {string} address
- * @return {string} Properly formatted address
- */
-function FORMAT_ADDRESS(address) {
-  if (!address) return '';
-  return address.toString()
-    .trim()
-    .replace(/\s+/g, ' ')
-    .split(' ')
-    .map(word => {
-      if (['NE', 'NW', 'SE', 'SW', 'N', 'S', 'E', 'W'].includes(word.toUpperCase())) {
-        return word.toUpperCase();
-      }
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .join(' ');
-}
-
-/**
- * Extract zip code from full address
- * @param {string} address
- * @return {string} Zip code
+ * Extract zip code from address
+ * Usage: =EXTRACT_ZIP(address)
+ * @customfunction
  */
 function EXTRACT_ZIP(address) {
   if (!address) return '';
@@ -113,190 +92,118 @@ function EXTRACT_ZIP(address) {
   return match ? match[1] : '';
 }
 
-/**
- * Calculate days between two dates
- * @param {Date} startDate
- * @param {Date} endDate
- * @return {number} Number of days
- */
-function DAYS_BETWEEN(startDate, endDate) {
-  if (!startDate || !endDate) return '';
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  return Math.floor((end - start) / (24 * 60 * 60 * 1000));
-}
-
-/**
- * Calculate days until a deadline
- * @param {Date} deadline
- * @return {number} Days until deadline (negative if passed)
- */
-function DAYS_UNTIL(deadline) {
-  if (!deadline) return '';
-  const today = new Date();
-  const target = new Date(deadline);
-  return Math.floor((target - today) / (24 * 60 * 60 * 1000));
-}
-
 // ============================================================================
-// LEAD SCORING FUNCTIONS
+// ZIP CODE UTILITIES
 // ============================================================================
 
 /**
- * Calculate lead score based on various factors
- * Returns 1-100 score
- */
-function LEAD_SCORE(equityPercent, motivation, daysOld, propertyCondition) {
-  let score = 50; // Base score
-
-  // Equity factor (up to 25 points)
-  if (equityPercent >= 50) score += 25;
-  else if (equityPercent >= 30) score += 15;
-  else if (equityPercent >= 20) score += 10;
-
-  // Motivation factor (up to 25 points)
-  const motivationLower = (motivation || '').toString().toLowerCase();
-  if (motivationLower === 'hot') score += 25;
-  else if (motivationLower === 'warm') score += 15;
-  else if (motivationLower === 'cold') score += 5;
-
-  // Freshness factor (up to 15 points)
-  if (daysOld <= 1) score += 15;
-  else if (daysOld <= 3) score += 10;
-  else if (daysOld <= 7) score += 5;
-  else if (daysOld > 30) score -= 10;
-
-  // Property condition factor (up to 10 points)
-  const condition = (propertyCondition || '').toString().toLowerCase();
-  if (condition === 'poor' || condition === 'needs work') score += 10;
-  else if (condition === 'fair') score += 5;
-
-  return Math.max(0, Math.min(100, score));
-}
-
-/**
- * Get lead priority based on score
- */
-function LEAD_PRIORITY(score) {
-  if (score >= 80) return 'Hot';
-  if (score >= 60) return 'Warm';
-  if (score >= 40) return 'Cool';
-  return 'Cold';
-}
-
-// ============================================================================
-// ZIP CODE ANALYSIS FUNCTIONS
-// ============================================================================
-
-/**
- * Get lead count for a specific zip code
- */
-function getLeadCountByZip(zipCode) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const mainPage = ss.getSheetByName(CONFIG.SHEETS.MAIN_PAGE);
-  if (!mainPage) return 0;
-
-  const data = mainPage.getRange('H2:H' + mainPage.getLastRow()).getValues();
-  return data.flat().filter(z => z.toString() === zipCode.toString()).length;
-}
-
-/**
- * Get contract count for a specific zip code
- */
-function getContractCountByZip(zipCode) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const mainPage = ss.getSheetByName(CONFIG.SHEETS.MAIN_PAGE);
-  if (!mainPage) return 0;
-
-  const data = mainPage.getDataRange().getValues();
-  let count = 0;
-
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][7].toString() === zipCode.toString() && data[i][15] === 'Yes') {
-      count++;
-    }
-  }
-
-  return count;
-}
-
-/**
- * Update all zip code statistics
+ * Update zip code statistics
  */
 function updateZipCodeStats() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const zipSheet = ss.getSheetByName(CONFIG.SHEETS.ZIP_CODES);
+  const onMarket = CONFIG.SHEETS.ON_MARKET;
+  const offMarket = CONFIG.SHEETS.OFF_MARKET;
 
-  if (!zipSheet) return;
+  if (!zipSheet || zipSheet.getLastRow() < 2) return;
 
   const lastRow = zipSheet.getLastRow();
-  if (lastRow < 2) return;
 
-  // Get all zip codes
-  const zips = zipSheet.getRange('A2:A' + lastRow).getValues();
-
-  // Update stats for each zip
-  for (let i = 0; i < zips.length; i++) {
-    const zip = zips[i][0];
+  for (let row = 2; row <= lastRow; row++) {
+    const zip = zipSheet.getRange('A' + row).getValue();
     if (!zip) continue;
 
-    const row = i + 2;
-
-    // Set formulas for lead count and contract count
-    zipSheet.getRange('I' + row).setFormula(`=COUNTIF('Main Page'!H:H,"${zip}")`);
-    zipSheet.getRange('J' + row).setFormula(`=COUNTIFS('Main Page'!H:H,"${zip}",'Main Page'!P:P,"Yes")`);
-    zipSheet.getRange('K' + row).setFormula(`=IF(I${row}>0,J${row}/I${row},0)`);
+    // Set formulas for leads and contracts
+    zipSheet.getRange('I' + row).setFormula(
+      `=COUNTIF('${onMarket}'!J:J,"${zip}")+COUNTIF('${offMarket}'!I:I,"${zip}")`
+    );
+    zipSheet.getRange('J' + row).setFormula(
+      `=COUNTIFS('${onMarket}'!J:J,"${zip}",'${onMarket}'!W:W,"Yes")+COUNTIFS('${offMarket}'!I:I,"${zip}",'${offMarket}'!V:V,"Yes")`
+    );
+    zipSheet.getRange('K' + row).setFormula(`=IF(I${row}>0,J${row}/I${row},0)`).setNumberFormat('0%');
     zipSheet.getRange('M' + row).setValue(new Date());
   }
 
   SpreadsheetApp.getUi().alert('Zip code statistics updated!');
 }
 
+/**
+ * Get performance for a specific zip code
+ */
+function getZipCodePerformance(zipCode) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  let totalLeads = 0;
+  let contracts = 0;
+
+  // Count from On Market
+  const onMarket = ss.getSheetByName(CONFIG.SHEETS.ON_MARKET);
+  if (onMarket && onMarket.getLastRow() > 1) {
+    const data = onMarket.getRange('J2:W' + onMarket.getLastRow()).getValues();
+    data.forEach(row => {
+      if (row[0] == zipCode) {
+        totalLeads++;
+        if (row[13] === 'Yes') contracts++; // Contract Signed column
+      }
+    });
+  }
+
+  // Count from Off Market
+  const offMarket = ss.getSheetByName(CONFIG.SHEETS.OFF_MARKET);
+  if (offMarket && offMarket.getLastRow() > 1) {
+    const data = offMarket.getRange('I2:V' + offMarket.getLastRow()).getValues();
+    data.forEach(row => {
+      if (row[0] == zipCode) {
+        totalLeads++;
+        if (row[13] === 'Yes') contracts++; // Contract Signed column
+      }
+    });
+  }
+
+  return {
+    zipCode,
+    totalLeads,
+    contracts,
+    conversionRate: totalLeads > 0 ? (contracts / totalLeads) : 0
+  };
+}
+
 // ============================================================================
-// BUYER MATCHING FUNCTIONS
+// BUYER MATCHING
 // ============================================================================
 
 /**
- * Find matching buyers for a property
+ * Find buyers matching property criteria
  * @param {string} zipCode
  * @param {string} propertyType
  * @param {number} price
- * @return {Array} Array of matching buyer names
+ * @return {Array} Matching buyer names
  */
 function findMatchingBuyers(zipCode, propertyType, price) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const buyerSheet = ss.getSheetByName(CONFIG.SHEETS.BUYERS_LIST);
 
-  if (!buyerSheet) return [];
+  if (!buyerSheet || buyerSheet.getLastRow() < 2) return [];
 
   const data = buyerSheet.getDataRange().getValues();
   const matches = [];
 
   for (let i = 1; i < data.length; i++) {
     const buyer = {
-      name: data[i][2],        // Contact Name
-      company: data[i][1],     // Company Name
-      preferredTypes: data[i][6]?.toString().toLowerCase() || '',
-      preferredZips: data[i][7]?.toString() || '',
+      name: data[i][2],
+      company: data[i][1],
+      preferredTypes: (data[i][6] || '').toString().toLowerCase(),
+      preferredZips: (data[i][7] || '').toString(),
       minPrice: data[i][8] || 0,
       maxPrice: data[i][9] || Infinity,
       active: data[i][15]
     };
 
-    // Skip inactive buyers
     if (buyer.active !== 'Yes') continue;
 
-    // Check zip code match
-    const zipMatch = !buyer.preferredZips ||
-                     buyer.preferredZips.includes(zipCode.toString());
-
-    // Check property type match
-    const typeMatch = !buyer.preferredTypes ||
-                      buyer.preferredTypes.includes(propertyType?.toString().toLowerCase());
-
-    // Check price range
-    const priceMatch = (!buyer.minPrice || price >= buyer.minPrice) &&
-                       (!buyer.maxPrice || price <= buyer.maxPrice);
+    const zipMatch = !buyer.preferredZips || buyer.preferredZips.includes(zipCode.toString());
+    const typeMatch = !buyer.preferredTypes || buyer.preferredTypes.includes((propertyType || '').toLowerCase());
+    const priceMatch = price >= buyer.minPrice && price <= buyer.maxPrice;
 
     if (zipMatch && typeMatch && priceMatch) {
       matches.push(buyer.company || buyer.name);
@@ -307,7 +214,9 @@ function findMatchingBuyers(zipCode, propertyType, price) {
 }
 
 /**
- * Custom function to show matching buyers in a cell
+ * Custom formula to show matching buyers
+ * Usage: =MATCHING_BUYERS(ZipCode, PropertyType, Price)
+ * @customfunction
  */
 function MATCHING_BUYERS(zipCode, propertyType, price) {
   const matches = findMatchingBuyers(zipCode, propertyType, price);
@@ -319,63 +228,45 @@ function MATCHING_BUYERS(zipCode, propertyType, price) {
 // ============================================================================
 
 /**
- * Export leads to CSV format
+ * Export On Market leads to CSV
  */
-function exportLeadsToCSV() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const mainPage = ss.getSheetByName(CONFIG.SHEETS.MAIN_PAGE);
-
-  if (!mainPage) {
-    SpreadsheetApp.getUi().alert('Main Page sheet not found');
-    return;
-  }
-
-  const data = mainPage.getDataRange().getValues();
-  let csv = '';
-
-  data.forEach(row => {
-    csv += row.map(cell => {
-      let value = cell.toString();
-      // Escape quotes and wrap in quotes if contains comma
-      if (value.includes(',') || value.includes('"')) {
-        value = '"' + value.replace(/"/g, '""') + '"';
-      }
-      return value;
-    }).join(',') + '\n';
-  });
-
-  // Create download link
-  const blob = Utilities.newBlob(csv, 'text/csv', 'leads_export.csv');
-  const url = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-
-  const html = HtmlService.createHtmlOutput(`
-    <p>Your export is ready:</p>
-    <textarea style="width:100%;height:200px;">${csv}</textarea>
-    <p>Copy the above data and paste into a text file, save as .csv</p>
-  `).setWidth(500).setHeight(350);
-
-  SpreadsheetApp.getUi().showModalDialog(html, 'Export Complete');
+function exportOnMarketToCSV() {
+  exportSheetToCSV(CONFIG.SHEETS.ON_MARKET);
 }
 
 /**
- * Export contract pipeline to CSV
+ * Export Off Market leads to CSV
+ */
+function exportOffMarketToCSV() {
+  exportSheetToCSV(CONFIG.SHEETS.OFF_MARKET);
+}
+
+/**
+ * Export Contract Pipeline to CSV
  */
 function exportPipelineToCSV() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const pipeline = ss.getSheetByName(CONFIG.SHEETS.CONTRACT_PIPELINE);
+  exportSheetToCSV(CONFIG.SHEETS.CONTRACT_PIPELINE);
+}
 
-  if (!pipeline) {
-    SpreadsheetApp.getUi().alert('Contract Pipeline sheet not found');
+/**
+ * Generic CSV export
+ */
+function exportSheetToCSV(sheetName) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+
+  if (!sheet) {
+    SpreadsheetApp.getUi().alert(`${sheetName} sheet not found`);
     return;
   }
 
-  const data = pipeline.getDataRange().getValues();
+  const data = sheet.getDataRange().getValues();
   let csv = '';
 
   data.forEach(row => {
     csv += row.map(cell => {
       let value = cell.toString();
-      if (value.includes(',') || value.includes('"')) {
+      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
         value = '"' + value.replace(/"/g, '""') + '"';
       }
       return value;
@@ -383,12 +274,27 @@ function exportPipelineToCSV() {
   });
 
   const html = HtmlService.createHtmlOutput(`
-    <p>Your pipeline export is ready:</p>
-    <textarea style="width:100%;height:200px;">${csv}</textarea>
-    <p>Copy the above data and paste into a text file, save as .csv</p>
-  `).setWidth(500).setHeight(350);
+    <style>
+      body { font-family: Arial, sans-serif; padding: 15px; }
+      textarea { width: 100%; height: 300px; font-family: monospace; }
+      .btn { padding: 10px 20px; margin-top: 10px; cursor: pointer; }
+    </style>
+    <h3>Export: ${sheetName}</h3>
+    <p>Copy the data below and save as .csv file:</p>
+    <textarea id="csv">${csv}</textarea>
+    <br>
+    <button class="btn" onclick="copyToClipboard()">Copy to Clipboard</button>
+    <script>
+      function copyToClipboard() {
+        const textarea = document.getElementById('csv');
+        textarea.select();
+        document.execCommand('copy');
+        alert('Copied to clipboard!');
+      }
+    </script>
+  `).setWidth(600).setHeight(450);
 
-  SpreadsheetApp.getUi().showModalDialog(html, 'Pipeline Export Complete');
+  SpreadsheetApp.getUi().showModalDialog(html, 'Export to CSV');
 }
 
 // ============================================================================
@@ -396,160 +302,230 @@ function exportPipelineToCSV() {
 // ============================================================================
 
 /**
- * Bulk update status for selected rows
+ * Bulk update offer status for selected rows
  */
-function bulkUpdateStatus() {
+function bulkMarkOfferMade() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getActiveSheet();
+  const sheetName = sheet.getName();
   const selection = sheet.getActiveRange();
 
-  const html = HtmlService.createHtmlOutput(`
-    <style>
-      body { font-family: Arial, sans-serif; padding: 15px; }
-      select, button { padding: 10px; margin: 5px 0; }
-      button { background: #1E3A5F; color: white; border: none; cursor: pointer; }
-    </style>
-    <h3>Bulk Update Status</h3>
-    <p>Selected rows: ${selection.getRow()} to ${selection.getLastRow()}</p>
-    <p>New Status:</p>
-    <select id="status">
-      <option value="New">New</option>
-      <option value="Contacted">Contacted</option>
-      <option value="Analyzing">Analyzing</option>
-      <option value="Offer Pending">Offer Pending</option>
-      <option value="Under Contract">Under Contract</option>
-      <option value="Closed">Closed</option>
-      <option value="Dead">Dead</option>
-    </select>
-    <br><br>
-    <button onclick="updateStatus()">Update</button>
-    <script>
-      function updateStatus() {
-        const status = document.getElementById('status').value;
-        google.script.run
-          .withSuccessHandler(() => {
-            alert('Status updated!');
-            google.script.host.close();
-          })
-          .applyBulkStatus(${selection.getRow()}, ${selection.getLastRow()}, status);
-      }
-    </script>
-  `).setWidth(300).setHeight(250);
-
-  SpreadsheetApp.getUi().showModalDialog(html, 'Bulk Update');
-}
-
-/**
- * Apply bulk status update
- */
-function applyBulkStatus(startRow, endRow, newStatus) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getActiveSheet();
-
-  // Find status column
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const statusCol = headers.indexOf('Status') + 1;
-
-  if (statusCol === 0) {
-    throw new Error('Status column not found');
-  }
-
-  // Update each row
-  for (let row = startRow; row <= endRow; row++) {
-    sheet.getRange(row, statusCol).setValue(newStatus);
-  }
-}
-
-/**
- * Bulk mark leads as qualified
- */
-function bulkMarkQualified() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getActiveSheet();
-  const selection = sheet.getActiveRange();
-
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const qualifiedCol = headers.indexOf('Qualified (Yes/No)') + 1;
-
-  if (qualifiedCol === 0) {
-    SpreadsheetApp.getUi().alert('Qualified column not found');
+  let offerCol;
+  if (sheetName === CONFIG.SHEETS.ON_MARKET) {
+    offerCol = 22; // Column V
+  } else if (sheetName === CONFIG.SHEETS.OFF_MARKET) {
+    offerCol = 21; // Column U
+  } else {
+    SpreadsheetApp.getUi().alert('Please run from On Market or Off Market sheet');
     return;
   }
 
-  const startRow = selection.getRow();
+  const startRow = Math.max(2, selection.getRow());
   const endRow = selection.getLastRow();
+  let count = 0;
 
   for (let row = startRow; row <= endRow; row++) {
-    if (row > 1) { // Skip header
-      sheet.getRange(row, qualifiedCol).setValue('Yes');
-    }
+    sheet.getRange(row, offerCol).setValue('Yes');
+    count++;
   }
 
-  SpreadsheetApp.getUi().alert(`Marked ${endRow - startRow + 1} leads as Qualified`);
+  SpreadsheetApp.getUi().alert(`Marked ${count} leads as Offer Made`);
+}
+
+/**
+ * Bulk update contract signed for selected rows
+ */
+function bulkMarkContractSigned() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+  const sheetName = sheet.getName();
+  const selection = sheet.getActiveRange();
+
+  let contractCol;
+  if (sheetName === CONFIG.SHEETS.ON_MARKET) {
+    contractCol = 23; // Column W
+  } else if (sheetName === CONFIG.SHEETS.OFF_MARKET) {
+    contractCol = 22; // Column V
+  } else {
+    SpreadsheetApp.getUi().alert('Please run from On Market or Off Market sheet');
+    return;
+  }
+
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.alert(
+    'Bulk Contract Signed',
+    'This will mark selected rows as Contract Signed and move them to the Pipeline. Continue?',
+    ui.ButtonSet.YES_NO
+  );
+
+  if (response !== ui.Button.YES) return;
+
+  const startRow = Math.max(2, selection.getRow());
+  const endRow = selection.getLastRow();
+  let count = 0;
+
+  for (let row = startRow; row <= endRow; row++) {
+    sheet.getRange(row, contractCol).setValue('Yes');
+    count++;
+  }
+
+  SpreadsheetApp.getUi().alert(`Marked ${count} leads as Contract Signed. They will be added to Pipeline.`);
 }
 
 // ============================================================================
-// QUICK FILTERS
+// REPORTING
 // ============================================================================
 
 /**
- * Show only hot leads (filter)
+ * Generate performance report
  */
-function filterHotLeads() {
+function generatePerformanceReport() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(CONFIG.SHEETS.MAIN_PAGE) || ss.getActiveSheet();
 
-  // Create filter if doesn't exist
-  if (!sheet.getFilter()) {
-    sheet.getDataRange().createFilter();
+  // Get all data
+  const onMarket = ss.getSheetByName(CONFIG.SHEETS.ON_MARKET);
+  const offMarket = ss.getSheetByName(CONFIG.SHEETS.OFF_MARKET);
+  const pipeline = ss.getSheetByName(CONFIG.SHEETS.CONTRACT_PIPELINE);
+
+  const totalOnMarket = onMarket ? Math.max(0, onMarket.getLastRow() - 1) : 0;
+  const totalOffMarket = offMarket ? Math.max(0, offMarket.getLastRow() - 1) : 0;
+
+  // Count pipeline stats
+  let underContract = 0;
+  let pendingClose = 0;
+  let closed = 0;
+  let totalRevenue = 0;
+
+  if (pipeline && pipeline.getLastRow() > 1) {
+    const data = pipeline.getRange('X2:Y' + pipeline.getLastRow()).getValues();
+    data.forEach(row => {
+      const profit = row[0] || 0;
+      const status = row[1];
+      if (status === 'Under Contract') underContract++;
+      if (status === 'Pending Close') pendingClose++;
+      if (status === 'Closed') {
+        closed++;
+        totalRevenue += profit;
+      }
+    });
   }
 
-  const filter = sheet.getFilter();
-  const statusCol = sheet.getRange(1, 1, 1, sheet.getLastColumn())
-    .getValues()[0].indexOf('Status') + 1;
+  // Team performance
+  const teamPerf = {};
+  CONFIG.TEAM_MEMBERS.forEach(m => teamPerf[m] = { leads: 0, contracts: 0 });
 
-  if (statusCol > 0) {
-    const criteria = SpreadsheetApp.newFilterCriteria()
-      .whenTextEqualTo('New')
-      .build();
-    filter.setColumnFilterCriteria(statusCol, criteria);
+  if (onMarket && onMarket.getLastRow() > 1) {
+    const data = onMarket.getRange('C2:W' + onMarket.getLastRow()).getValues();
+    data.forEach(row => {
+      if (teamPerf[row[0]]) {
+        teamPerf[row[0]].leads++;
+        if (row[20] === 'Yes') teamPerf[row[0]].contracts++;
+      }
+    });
   }
+
+  if (offMarket && offMarket.getLastRow() > 1) {
+    const data = offMarket.getRange('C2:V' + offMarket.getLastRow()).getValues();
+    data.forEach(row => {
+      if (teamPerf[row[0]]) {
+        teamPerf[row[0]].leads++;
+        if (row[19] === 'Yes') teamPerf[row[0]].contracts++;
+      }
+    });
+  }
+
+  // Build report
+  let report = 'ACQUISITION PERFORMANCE REPORT\n';
+  report += '================================\n\n';
+  report += `Generated: ${new Date().toLocaleString()}\n\n`;
+
+  report += 'LEAD SUMMARY\n';
+  report += '------------\n';
+  report += `On Market Leads: ${totalOnMarket}\n`;
+  report += `Off Market Leads: ${totalOffMarket}\n`;
+  report += `Total Leads: ${totalOnMarket + totalOffMarket}\n\n`;
+
+  report += 'PIPELINE\n';
+  report += '--------\n';
+  report += `Under Contract: ${underContract}\n`;
+  report += `Pending Close: ${pendingClose}\n`;
+  report += `Closed: ${closed}\n`;
+  report += `Total Revenue: $${totalRevenue.toLocaleString()}\n\n`;
+
+  report += 'TEAM PERFORMANCE\n';
+  report += '----------------\n';
+  Object.keys(teamPerf).forEach(member => {
+    const p = teamPerf[member];
+    const rate = p.leads > 0 ? ((p.contracts / p.leads) * 100).toFixed(1) : '0';
+    report += `${member}: ${p.leads} leads, ${p.contracts} contracts (${rate}%)\n`;
+  });
+
+  // Show report
+  const html = HtmlService.createHtmlOutput(`
+    <style>
+      body { font-family: monospace; padding: 20px; white-space: pre-wrap; }
+    </style>
+    <pre>${report}</pre>
+  `).setWidth(500).setHeight(500);
+
+  SpreadsheetApp.getUi().showModalDialog(html, 'Performance Report');
+
+  return report;
 }
 
-/**
- * Show deals under contract (filter)
- */
-function filterUnderContract() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(CONFIG.SHEETS.CONTRACT_PIPELINE) || ss.getActiveSheet();
-
-  if (!sheet.getFilter()) {
-    sheet.getDataRange().createFilter();
-  }
-
-  const filter = sheet.getFilter();
-  const statusCol = sheet.getRange(1, 1, 1, sheet.getLastColumn())
-    .getValues()[0].indexOf('Status') + 1;
-
-  if (statusCol > 0) {
-    const criteria = SpreadsheetApp.newFilterCriteria()
-      .whenTextEqualTo('Under Contract')
-      .build();
-    filter.setColumnFilterCriteria(statusCol, criteria);
-  }
-}
+// ============================================================================
+// DATA CLEANUP
+// ============================================================================
 
 /**
- * Clear all filters
+ * Clean up empty rows
  */
-function clearAllFilters() {
+function removeEmptyRows() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getActiveSheet();
 
-  const filter = sheet.getFilter();
-  if (filter) {
-    filter.remove();
+  const data = sheet.getDataRange().getValues();
+  const rowsToDelete = [];
+
+  for (let i = data.length - 1; i >= 1; i--) {
+    const row = data[i];
+    const isEmpty = row.every(cell => cell === '' || cell === null);
+    if (isEmpty) {
+      rowsToDelete.push(i + 1);
+    }
   }
 
-  SpreadsheetApp.getUi().alert('Filters cleared');
+  rowsToDelete.forEach(row => sheet.deleteRow(row));
+
+  SpreadsheetApp.getUi().alert(`Removed ${rowsToDelete.length} empty rows`);
+}
+
+/**
+ * Sort sheet by date (newest first)
+ */
+function sortByDateDesc() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+
+  if (sheet.getLastRow() < 3) return;
+
+  const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
+  range.sort({ column: 2, ascending: false }); // Date Added column
+
+  SpreadsheetApp.getUi().alert('Sorted by date (newest first)');
+}
+
+/**
+ * Sort sheet by date (oldest first)
+ */
+function sortByDateAsc() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getActiveSheet();
+
+  if (sheet.getLastRow() < 3) return;
+
+  const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, sheet.getLastColumn());
+  range.sort({ column: 2, ascending: true }); // Date Added column
+
+  SpreadsheetApp.getUi().alert('Sorted by date (oldest first)');
 }

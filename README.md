@@ -1,235 +1,164 @@
-# Keystone Acquisition Workspace
+# Keystone Acquisition Workspace v4.0
 
-A comprehensive Google Sheets-based real estate acquisition tracking system with automated KPIs, lead management, and deal pipeline tracking.
+A streamlined Google Sheets-based real estate acquisition tracking system with automated pipeline management.
 
 ## Features
 
-### Lead Tracking
-- **On-Market Leads**: Track properties from Zillow, Redfin, Realtor.com, and MLS
-- **Off-Market Leads**: Track deals from wholesalers, agents, direct mail, cold calling, driving for dollars, probate, and tax liens
-- **Automated Lead IDs**: Auto-generated unique identifiers
-- **Status Tracking**: Full workflow from New to Closed
+### Simplified Lead Tracking
+- **On Market Leads**: Zillow, Redfin, MLS, Crexi, LoopNet
+- **Off Market Leads**: Wholesalers, Direct Mail, Expired, Foreclosure, Tired Landlord, Probate, Tax Lien
 
-### Contract Pipeline
-- Track deals under contract through closing
-- Inspection period and close date monitoring
-- Disposition strategy tracking (Assignment, Double Close, Wholetail, Fix & Flip, Buy & Hold)
-- Automatic profit calculations
+### Automatic Pipeline
+- When "Contract Signed" = Yes, lead automatically moves to Contract Pipeline
+- No manual data entry for pipeline - all data transfers automatically
+
+### Team Tracking
+- Acquisition Team Member assignment (Tess Walter, Nick Barr)
+- Team performance metrics and leaderboard
+- Per-member conversion rates
 
 ### KPI Dashboard
-- Monthly performance metrics
-- Goal tracking with visual progress indicators
-- Conversion rate analysis:
-  - Lead to Qualified
-  - Qualified to Offer
-  - Offer to Contract
-  - Contract to Close
-- Source performance comparison
+- Monthly KPIs with goal tracking
+- Yearly KPI tracking by month
+- Conversion rates: Lead → Offer → Contract → Close
+- Source/Issue performance comparison
 
-### Automation
-- Auto-populate Lead IDs and dates
-- MAO (Maximum Allowable Offer) calculator using 70% rule
-- Auto-move leads to Contract Pipeline when contract signed
-- Scheduled reports (daily, weekly, monthly)
-- Stale lead detection
-- Contract deadline alerts
-
-### Zip Code Management
-- Track target markets by zip code
-- Performance metrics per zip
-- Priority ranking (High/Medium/Low)
-- Success rate tracking
-
-### Buyers List
-- Cash buyer database
-- Buyer matching by zip code, property type, and price range
-- Deal history tracking
+### Future Integrations
+- Gmail integration placeholder
+- DealMachine.com integration placeholder
 
 ## Project Structure
 
 ```
 keystone-acquisition/
 ├── google-apps-script/
-│   ├── Code.gs           # Main script with sheet creation & core functions
-│   ├── Triggers.gs       # Time-based automation and triggers
-│   └── Utilities.gs      # Helper functions and calculations
+│   ├── Code.gs           # Main script - sheets, menus, automation
+│   ├── Triggers.gs       # Time-based automation
+│   └── Utilities.gs      # Helper functions & custom formulas
 ├── templates/
-│   ├── sheet-structure.json   # Complete sheet schema
-│   └── sample-zip-codes.csv   # 120+ DFW zip codes ready to import
+│   ├── sheet-structure.json   # Schema reference
+│   └── sample-zip-codes.csv   # 120+ DFW zip codes
 ├── docs/
-│   └── SETUP.md          # Detailed setup instructions
-└── README.md             # This file
+│   └── SETUP.md          # Setup guide
+└── README.md
 ```
 
-## Quick Start
-
-### 1. Open Google Sheets
-Open your existing Acquisition Workspace or create a new Google Sheet.
-
-### 2. Add the Script
-1. Go to **Extensions** > **Apps Script**
-2. Copy contents of `google-apps-script/Code.gs` into the editor
-3. Create additional files for `Triggers.gs` and `Utilities.gs`
-4. Save the project
-
-### 3. Initialize
-1. Refresh the spreadsheet
-2. Click **Acquisition Tools** > **Setup** > **Initialize All Sheets**
-3. Authorize when prompted
-
-### 4. Import Zip Codes
-1. Click **Acquisition Tools** > **Setup** > **Import Zip Codes**
-2. Or paste from `templates/sample-zip-codes.csv`
-
-## Sheet Overview
+## Sheets Created
 
 | Sheet | Purpose |
 |-------|---------|
-| On Market Leads | Zillow, Redfin, MLS tracking |
-| Off Market Leads | Wholesaler, agent, direct mail tracking |
-| Contract Pipeline | Deals under contract to close |
-| Main Page | Consolidated view of all leads |
-| Lead KPIs | Monthly metrics and conversion rates |
-| Zip Codes | Target markets and performance |
-| Dashboard | Visual overview and goal progress |
-| Buyers List | Cash buyer database |
+| On Market Leads | Zillow, Redfin, MLS, Crexi, LoopNet tracking |
+| Off Market Leads | Wholesaler, Direct Mail, Expired, Foreclosure leads |
+| Contract Pipeline | Auto-populated from lead sheets |
+| Lead KPIs | Monthly metrics |
+| Yearly KPIs | Track each month's KPIs for the year |
+| Zip Codes | Target markets with performance stats |
+| Dashboard | Visual overview |
+| Buyers List | Import from Dispo Workspace 3.0 |
 
-## Default Monthly Goals
+## Column Structure
 
-| Metric | Goal |
-|--------|------|
-| Leads Generated | 100 |
-| Leads Qualified | 50 |
-| Offers Made | 25 |
-| Contracts Signed | 5 |
-| Deals Closed | 3 |
-| Revenue Target | $50,000 |
+### On Market Leads
+- Lead ID (auto)
+- Date Added (auto)
+- Acquisition Team Member
+- Source (Zillow, Redfin, MLS, Crexi, LoopNet)
+- MLS #, Address, City, County, State, Zip
+- Property details (Type, Beds, Baths, Sqft, Year Built)
+- List Price, Days on Market
+- ARV, Repair Estimate, MAO (auto-calculated)
+- Offer Amount
+- Offer Made (Yes/No)
+- **Contract Signed (Yes/No)** ← Triggers pipeline move
+- Notes, Agent info, URL
 
-Customize these in the `CONFIG` object in `Code.gs`.
+### Off Market Leads
+- Lead ID (auto)
+- Date Added (auto)
+- Acquisition Team Member
+- **Issue** (Wholesaler, Direct Mail, Expired, Foreclosure, Tired Landlord, etc.)
+- Address, City, County, State, Zip
+- Property details
+- Asking Price, ARV, Repair Estimate, MAO (auto)
+- Offer Amount, Assignment Fee
+- Offer Made (Yes/No)
+- **Contract Signed (Yes/No)** ← Triggers pipeline move
+- Motivation Level, Seller info, Notes
 
-## Automation Features
+## Automation
 
 ### On Edit Triggers
-- Auto-generate Lead ID
-- Auto-set Date Added
-- Auto-calculate MAO
-- Auto-move to Contract Pipeline when "Contract Signed" = Yes
+- Auto-generate Lead ID and Date
+- Auto-calculate MAO (70% rule)
+- Auto-move to Pipeline when Contract Signed = Yes
 
-### Time-Based Triggers
-- **Daily (8 AM)**: Morning activity summary
-- **Weekly (Monday 9 AM)**: KPI report
-- **Monthly (1st)**: Archive KPIs, reset for new month
-- **Weekly (Sunday 2 AM)**: Archive old dead leads
+### Menu Functions
+- Acquisition Tools > Refresh Dashboard
+- Acquisition Tools > Update KPIs
+- Acquisition Tools > Add New Lead (forms)
+- Acquisition Tools > Setup > Initialize All Sheets
+- Acquisition Tools > Setup > Import Buyers from Dispo Workspace
+- Acquisition Tools > Setup > Start New Month
+- Acquisition Tools > Setup > Import Zip Codes
 
-## Custom Formulas
+### Time-Based (configure in Apps Script)
+- Daily morning report (8 AM)
+- Weekly summary (Monday 9 AM)
+- Contract deadline checks (daily 7 AM)
+- Monthly KPI archive (1st of month)
 
-Use these in any cell:
+## Quick Start
 
-```
-=MAO(ARV, Repairs, WholesaleFee)     # Calculate Maximum Allowable Offer
-=POTENTIAL_PROFIT(...)               # Calculate flip profit
-=ASSIGNMENT_FEE(Contract, EndBuyer)  # Calculate assignment fee
-=FORMAT_PHONE(phone)                 # Format (XXX) XXX-XXXX
-=DAYS_UNTIL(date)                    # Days until deadline
-=LEAD_SCORE(equity, motivation, days, condition)  # Score 1-100
-=MATCHING_BUYERS(zip, type, price)   # Find matching buyers
-```
+1. Open your Google Sheet
+2. Go to Extensions > Apps Script
+3. Create files: Code.gs, Triggers.gs, Utilities.gs
+4. Copy content from `google-apps-script/` folder
+5. Save and refresh sheet
+6. Click **Acquisition Tools > Setup > Initialize All Sheets**
 
-## Menu Options
-
-After initialization, find **Acquisition Tools** in the menu:
-
-- **Refresh Dashboard** - Update all calculations
-- **Update KPIs** - Recalculate KPI sheet
-- **Add New Lead** - Quick entry forms
-- **Move to Contract Pipeline** - Manual pipeline move
-- **Setup** - Initialize sheets, reset KPIs, import zip codes
-- **Help** - Usage documentation
-
-## Workflow
-
-```
-1. Lead Entry
-   └── On Market (Zillow/Redfin) OR Off Market (Wholesaler/Agent)
-
-2. Lead Qualification
-   └── Analyze → Set Qualified = Yes → Pass to Team Lead
-
-3. Offer Stage
-   └── Calculate MAO → Submit Offer → Track in system
-
-4. Contract Stage
-   └── Contract Signed = Yes → Auto-moves to Contract Pipeline
-
-5. Closing
-   └── Track deadlines → Update disposition → Record final sale
-```
-
-## Data Sources Supported
-
-### On-Market
-- Zillow
-- Redfin
-- Realtor.com
-- MLS
-
-### Off-Market
-- Wholesalers
-- Agent Referrals
-- Direct Mail
-- Cold Calling
-- Driving for Dollars
-- Probate
-- Tax Liens
-
-## Customization
-
-### Modify Lead Sources
-Edit the `CONFIG.SOURCES` object in `Code.gs`:
-
-```javascript
-SOURCES: {
-  ON_MARKET: ['Zillow', 'Redfin', 'Realtor.com', 'MLS', 'YourSource'],
-  OFF_MARKET: ['Wholesaler', 'Agent Referral', 'Direct Mail', ...]
-}
-```
-
-### Modify Status Options
-Edit the `CONFIG.STATUS` object:
-
-```javascript
-STATUS: {
-  LEAD: ['New', 'Contacted', 'Analyzing', 'Offer Pending', ...],
-  DISPOSITION: ['Assigned', 'Double Close', 'Wholetail', ...]
-}
-```
-
-### Modify Monthly Goals
-Edit the `CONFIG.MONTHLY_GOALS` object:
+## Monthly Goals (Customize in Code.gs)
 
 ```javascript
 MONTHLY_GOALS: {
-  LEADS_GENERATED: 150,
-  LEADS_QUALIFIED: 75,
-  // ...
+  LEADS_GENERATED: 100,
+  OFFERS_MADE: 25,
+  CONTRACTS_SIGNED: 5,
+  DEALS_CLOSED: 3,
+  REVENUE_TARGET: 50000
 }
 ```
 
-## Included Zip Codes
+## Team Members (Customize in Code.gs)
 
-The `sample-zip-codes.csv` includes 120+ zip codes in the Dallas-Fort Worth metroplex:
-- Dallas County
-- Collin County
-- Denton County
-- Tarrant County
-- Rockwall County
+```javascript
+TEAM_MEMBERS: ['Tess Walter', 'Nick Barr']
+```
 
-Each includes city, county, market status, priority level, and notes.
+## Custom Formulas
 
-## License
+Use in any cell:
+- `=MAO(ARV, Repairs, Fee)` - Maximum Allowable Offer
+- `=PROFIT(Purchase, ARV, Repairs, Holding, Selling)` - Potential profit
+- `=ASSIGNMENT_FEE(Contract, EndBuyer)` - Assignment fee
+- `=DAYS_UNTIL(date)` - Days until deadline
+- `=FORMAT_PHONE(phone)` - Format phone number
+- `=MATCHING_BUYERS(Zip, Type, Price)` - Find matching buyers
 
-This project is provided as-is for real estate acquisition tracking purposes.
+## Importing Buyers
 
-## Support
+To import buyers from your Dispo Workspace 3.0:
+1. Click **Acquisition Tools > Setup > Import Buyers from Dispo Workspace**
+2. Enter the Spreadsheet ID from your Dispo Workspace URL
+3. Buyers will be imported to the Buyers List sheet
 
-See `docs/SETUP.md` for detailed setup instructions and troubleshooting.
+## Adding Zip Codes
+
+1. Click **Acquisition Tools > Setup > Import Zip Codes**
+2. Enter zip codes (one per line or comma-separated)
+3. Or paste directly from `templates/sample-zip-codes.csv`
+
+## Version History
+
+- **v4.0** - Simplified structure, removed Main Page, added team tracking, yearly KPIs
+- **v3.1** - Full automation with Main Page consolidation
+- **v3.0** - Added KPI tracking and Dashboard
