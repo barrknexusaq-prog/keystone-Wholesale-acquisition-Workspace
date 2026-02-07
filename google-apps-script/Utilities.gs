@@ -174,6 +174,8 @@ function getZipCodePerformance(zipCode) {
 
 /**
  * Find buyers matching property criteria
+/**
+ * Find buyers matching property criteria
  * Buyers List columns (Dispo Workspace 3.0 format):
  *   0: Timestamp, 1: Name, 2: Phone, 3: Email, 4: Type of Buyer,
  *   5: Asset Type, 6: Deal Preference, 7: Exit Strategy, 8: Market,
@@ -181,10 +183,10 @@ function getZipCodePerformance(zipCode) {
  *
  * @param {string} zipCode - Property zip code
  * @param {string} propertyType - Property type (e.g., "Single Family")
- * @param {number} price - Property price (used for criteria text search)
+ * @param {string} market - Optional state code (FL, TN, TX, GA)
  * @return {Array} Matching buyer names
  */
-function findMatchingBuyers(zipCode, propertyType, price) {
+function findMatchingBuyers(zipCode, propertyType, market) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const buyerSheet = ss.getSheetByName(CONFIG.SHEETS.BUYERS_LIST);
 
@@ -198,18 +200,22 @@ function findMatchingBuyers(zipCode, propertyType, price) {
     if (!name) continue; // Skip empty rows
 
     const assetTypes = (data[i][5] || '').toString().toLowerCase();
-    const market = (data[i][8] || '').toString().toUpperCase();
+    const buyerMarket = (data[i][8] || '').toString().toUpperCase();
     const locations = (data[i][9] || '').toString().toLowerCase();
 
     // Match on asset type (property type must appear in buyer's asset types)
     const typeMatch = !assetTypes || !propertyType ||
       assetTypes.includes((propertyType || '').toLowerCase());
 
-    // Match on location (zip code appears in market states or city/zip text)
-    const zipStr = (zipCode || '').toString();
-    const locationMatch = !zipStr ||
-      locations.includes(zipStr) ||
-      market.includes(zipStr);
+    // Match on market (state) or zip code
+    let locationMatch = true;
+    if (market) {
+      locationMatch = !buyerMarket || buyerMarket.includes(market.toUpperCase());
+    }
+    if (zipCode) {
+      const zipStr = zipCode.toString();
+      locationMatch = locationMatch || locations.includes(zipStr);
+    }
 
     if (typeMatch && locationMatch) {
       matches.push(name);
@@ -219,13 +225,22 @@ function findMatchingBuyers(zipCode, propertyType, price) {
   return matches;
 }
 
+    }
+  }
+
+  return matches;
+}
+
 /**
  * Custom formula to show matching buyers
- * Usage: =MATCHING_BUYERS(ZipCode, PropertyType, Price)
+ * Usage: =MATCHING_BUYERS(ZipCode, PropertyType, Market)
+ * @param {string} zipCode - Zip code to match against buyer locations
+ * @param {string} propertyType - Property type (Single Family, Multi-Family, etc.)
+ * @param {string} market - State code (FL, TN, TX, GA)
  * @customfunction
  */
-function MATCHING_BUYERS(zipCode, propertyType, price) {
-  const matches = findMatchingBuyers(zipCode, propertyType, price);
+function MATCHING_BUYERS(zipCode, propertyType, market) {
+  const matches = findMatchingBuyers(zipCode, propertyType, market);
   return matches.length > 0 ? matches.join(', ') : 'No matches';
 }
 
