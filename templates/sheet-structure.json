@@ -155,25 +155,20 @@
       ]
     },
     "Buyers List": {
-      "description": "Cash buyer database for dispositions",
+      "description": "Buyer database imported from Dispo Workspace form responses",
       "headerColor": "#1F4A5C",
       "columns": [
-        { "name": "Buyer ID", "type": "text", "width": 80, "autoGenerate": true },
-        { "name": "Company Name", "type": "text", "width": 150 },
-        { "name": "Contact Name", "type": "text", "width": 120 },
-        { "name": "Phone", "type": "phone", "width": 120 },
-        { "name": "Email", "type": "email", "width": 150 },
-        { "name": "Buyer Type", "type": "dropdown", "width": 100, "options": ["Investor", "Flipper", "Landlord", "Wholesaler", "Other"] },
-        { "name": "Preferred Property Types", "type": "text", "width": 150 },
-        { "name": "Preferred Zip Codes", "type": "text", "width": 150 },
-        { "name": "Min Purchase Price", "type": "currency", "width": 100 },
-        { "name": "Max Purchase Price", "type": "currency", "width": 100 },
-        { "name": "Proof of Funds", "type": "dropdown", "width": 80, "options": ["Yes", "No"] },
-        { "name": "Deals Closed", "type": "number", "width": 80 },
-        { "name": "Last Deal Date", "type": "date", "width": 100 },
-        { "name": "Rating", "type": "dropdown", "width": 80, "options": ["A", "B", "C", "D"] },
-        { "name": "Notes", "type": "text", "width": 200 },
-        { "name": "Active (Yes/No)", "type": "dropdown", "width": 80, "options": ["Yes", "No"], "default": "Yes" }
+        { "name": "Timestamp", "type": "date", "width": 140 },
+        { "name": "Name", "type": "text", "width": 150 },
+        { "name": "Phone number", "type": "phone", "width": 120 },
+        { "name": "Email", "type": "email", "width": 180 },
+        { "name": "Type of Buyer", "type": "dropdown", "width": 120, "options": ["Creative", "Cash", "Cash, Creative"] },
+        { "name": "Asset Type", "type": "text", "width": 160, "note": "Multi-select: Multi-Family, Single Family, RV Parks, Mobile Home Parks, Land" },
+        { "name": "Deal Preference", "type": "text", "width": 180, "note": "Multi-select: Creative Financing, Cash, Seller Finance, Subject to, Hybrid" },
+        { "name": "Exit Strategy", "type": "text", "width": 140, "note": "Multi-select: Buy & Hold, Fix and Flip" },
+        { "name": "Market", "type": "text", "width": 120, "note": "State abbreviations: FL, TN, TX" },
+        { "name": "City, County, or Zip-code(s)", "type": "text", "width": 200 },
+        { "name": "Criteria", "type": "text", "width": 250 }
       ]
     }
   },

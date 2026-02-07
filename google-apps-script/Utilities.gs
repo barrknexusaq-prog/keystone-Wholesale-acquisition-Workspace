@@ -174,13 +174,15 @@ function getZipCodePerformance(zipCode) {
 
 /**
  * Find buyers matching property criteria
- * New column structure (dispo_workspace 3.0):
- * A: Timestamp, B: Name, C: Phone, D: Email, E: Type of Buyer,
- * F: Asset Type, G: Deal Preference, H: Exit Strategy, I: Market,
- * J: City/County/Zip, K: Criteria
+/**
+ * Find buyers matching property criteria
+ * Buyers List columns (Dispo Workspace 3.0 format):
+ *   0: Timestamp, 1: Name, 2: Phone, 3: Email, 4: Type of Buyer,
+ *   5: Asset Type, 6: Deal Preference, 7: Exit Strategy, 8: Market,
+ *   9: City/County/Zip-code(s), 10: Criteria
  *
- * @param {string} zipCode - Zip code or market (state) to match
- * @param {string} propertyType - Property type to match (Single Family, Multi-Family, etc.)
+ * @param {string} zipCode - Property zip code
+ * @param {string} propertyType - Property type (e.g., "Single Family")
  * @param {string} market - Optional state code (FL, TN, TX, GA)
  * @return {Array} Matching buyer names
  */
@@ -194,32 +196,35 @@ function findMatchingBuyers(zipCode, propertyType, market) {
   const matches = [];
 
   for (let i = 1; i < data.length; i++) {
-    const buyer = {
-      name: data[i][1],                                    // B: Name
-      assetTypes: (data[i][5] || '').toString().toLowerCase(),  // F: Asset Type
-      buyerMarket: (data[i][8] || '').toString().toUpperCase(), // I: Market (FL, TN, TX)
-      locations: (data[i][9] || '').toString().toLowerCase(),   // J: City/County/Zip
-      criteria: (data[i][10] || '').toString().toLowerCase()    // K: Criteria
-    };
+    const name = (data[i][1] || '').toString().trim();
+    if (!name) continue; // Skip empty rows
 
-    if (!buyer.name) continue; // Skip empty rows
+    const assetTypes = (data[i][5] || '').toString().toLowerCase();
+    const buyerMarket = (data[i][8] || '').toString().toUpperCase();
+    const locations = (data[i][9] || '').toString().toLowerCase();
 
-    // Match by property type (Asset Type column)
-    const typeMatch = !propertyType ||
-      !buyer.assetTypes ||
-      buyer.assetTypes.includes((propertyType || '').toLowerCase());
+    // Match on asset type (property type must appear in buyer's asset types)
+    const typeMatch = !assetTypes || !propertyType ||
+      assetTypes.includes((propertyType || '').toLowerCase());
 
-    // Match by market (state) or zip code
+    // Match on market (state) or zip code
     let locationMatch = true;
     if (market) {
-      locationMatch = !buyer.buyerMarket || buyer.buyerMarket.includes(market.toUpperCase());
+      locationMatch = !buyerMarket || buyerMarket.includes(market.toUpperCase());
     }
-    if (zipCode && buyer.locations) {
-      locationMatch = locationMatch || buyer.locations.includes(zipCode.toString());
+    if (zipCode) {
+      const zipStr = zipCode.toString();
+      locationMatch = locationMatch || locations.includes(zipStr);
     }
 
     if (typeMatch && locationMatch) {
-      matches.push(buyer.name);
+      matches.push(name);
+    }
+  }
+
+  return matches;
+}
+
     }
   }
 

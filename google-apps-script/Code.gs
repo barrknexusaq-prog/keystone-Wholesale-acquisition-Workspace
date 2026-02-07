@@ -46,6 +46,13 @@ const CONFIG = {
   // Disposition Options
   DISPOSITION: ['Assigned', 'Double Close', 'Wholetail', 'Fix & Flip', 'Buy & Hold', 'Dead Deal'],
 
+  // Buyer Options (matching Dispo Workspace 3.0 Buyer sheet)
+  BUYER_TYPES: ['Creative', 'Cash', 'Cash, Creative'],
+  BUYER_ASSET_TYPES: ['Multi-Family', 'Single Family', 'RV Parks', 'Mobile Home Parks', 'Land'],
+  BUYER_DEAL_PREFERENCES: ['Creative Financing', 'Cash', 'Seller Finance', 'Subject to', 'Hybrid'],
+  BUYER_EXIT_STRATEGIES: ['Buy & Hold', 'Fix and Flip'],
+  BUYER_MARKETS: ['FL', 'TN', 'TX'],
+
   // Monthly Goals
   MONTHLY_GOALS: {
     LEADS_GENERATED: 100,
@@ -610,7 +617,7 @@ function createDashboardSheet(ss) {
 }
 
 /**
- * Create Buyers List sheet
+ * Create Buyers List sheet (matches Dispo Workspace 3.0 Buyer sheet structure)
  */
 function createBuyersListSheet(ss) {
   let sheet = ss.getSheetByName(CONFIG.SHEETS.BUYERS_LIST);
@@ -620,17 +627,28 @@ function createBuyersListSheet(ss) {
 
   // Headers matching dispo_workspace 3.0 Buyer sheet
   const headers = [
-    'Timestamp',           // A
-    'Name',                // B
-    'Phone number',        // C
-    'Email',               // D
-    'Type of Buyer',       // E
-    'Asset Type',          // F
-    'Deal Preference',     // G
-    'Exit Strategy',       // H
-    'Market',              // I
-    'City, County, or Zip-code(s)', // J
-    'Criteria'             // K
+/**
+ * Create Buyers List sheet (matches Dispo Workspace 3.0 Buyer sheet structure)
+ */
+function createBuyersListSheet(ss) {
+  let sheet = ss.getSheetByName(CONFIG.SHEETS.BUYERS_LIST);
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.SHEETS.BUYERS_LIST);
+  }
+
+  // Headers matching dispo_workspace 3.0 Buyer sheet
+  const headers = [
+    'Timestamp',                  // A - Form submission timestamp
+    'Name',                       // B - Buyer name
+    'Phone number',               // C - Phone
+    'Email',                      // D - Email
+    'Type of Buyer',              // E - Dropdown: Creative, Cash, Cash/Creative
+    'Asset Type',                 // F - Multi-select: Multi-Family, Single Family, RV Parks, Mobile Home Parks, Land
+    'Deal Preference',            // G - Multi-select: Creative Financing, Cash, Seller Finance, Subject to, Hybrid
+    'Exit Strategy',              // H - Multi-select: Buy & Hold, Fix and Flip
+    'Market',                     // I - State markets: FL, TN, TX
+    'City, County, or Zip-code(s)', // J - Target locations
+    'Criteria'                    // K - Buying criteria/notes
   ];
 
   // Setup headers with purple background (like Form_Responses)
@@ -644,28 +662,82 @@ function createBuyersListSheet(ss) {
   sheet.setRowHeight(1, 40);
   sheet.setFrozenRows(1);
 
-  // Set column widths
+  // Set column widths to match Dispo Workspace layout
   sheet.setColumnWidth(1, 140);  // Timestamp
-  sheet.setColumnWidth(2, 120);  // Name
-  sheet.setColumnWidth(3, 120);  // Phone
+  sheet.setColumnWidth(2, 150);  // Name
+  sheet.setColumnWidth(3, 120);  // Phone number
   sheet.setColumnWidth(4, 180);  // Email
-  sheet.setColumnWidth(5, 100);  // Type of Buyer
-  sheet.setColumnWidth(6, 120);  // Asset Type
-  sheet.setColumnWidth(7, 130);  // Deal Preference
-  sheet.setColumnWidth(8, 110);  // Exit Strategy
-  sheet.setColumnWidth(9, 100);  // Market
-  sheet.setColumnWidth(10, 200); // City/County/Zip
-  sheet.setColumnWidth(11, 200); // Criteria
+  sheet.setColumnWidth(5, 120);  // Type of Buyer
+  sheet.setColumnWidth(6, 160);  // Asset Type
+  sheet.setColumnWidth(7, 180);  // Deal Preference
+  sheet.setColumnWidth(8, 140);  // Exit Strategy
+  sheet.setColumnWidth(9, 120);  // Market
+  sheet.setColumnWidth(10, 200); // City, County, or Zip-code(s)
+  sheet.setColumnWidth(11, 250); // Criteria
+}
 
-  // Pre-populate "Creative" as default in Type of Buyer (column E) for rows 2-100
-  const defaultValues = [];
-  for (let i = 0; i < 99; i++) {
-    defaultValues.push(['Creative']);
+  ];
+
+  // Setup headers with purple background (like Form_Responses)
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setValues([headers]);
+  headerRange.setFontWeight('bold');
+  headerRange.setBackground('#4A1F5C');
+  headerRange.setFontColor('white');
+  headerRange.setHorizontalAlignment('center');
+  headerRange.setVerticalAlignment('middle');
+  sheet.setRowHeight(1, 40);
+  sheet.setFrozenRows(1);
+/**
+ * Create Buyers List sheet (matches Dispo Workspace 3.0 Buyer sheet structure)
+ */
+function createBuyersListSheet(ss) {
+  let sheet = ss.getSheetByName(CONFIG.SHEETS.BUYERS_LIST);
+  if (!sheet) {
+    sheet = ss.insertSheet(CONFIG.SHEETS.BUYERS_LIST);
   }
-  sheet.getRange('E2:E100').setValues(defaultValues);
 
-  // Set text wrapping for criteria and location columns
-  sheet.getRange('J2:K1000').setWrap(true);
+  // Headers matching dispo_workspace 3.0 Buyer sheet
+  const headers = [
+    'Timestamp',                  // A - Form submission timestamp
+    'Name',                       // B - Buyer name
+    'Phone number',               // C - Phone
+    'Email',                      // D - Email
+    'Type of Buyer',              // E - Dropdown: Creative, Cash, Cash/Creative
+    'Asset Type',                 // F - Multi-select: Multi-Family, Single Family, RV Parks, Mobile Home Parks, Land
+    'Deal Preference',            // G - Multi-select: Creative Financing, Cash, Seller Finance, Subject to, Hybrid
+    'Exit Strategy',              // H - Multi-select: Buy & Hold, Fix and Flip
+    'Market',                     // I - State markets: FL, TN, TX
+    'City, County, or Zip-code(s)', // J - Target locations
+    'Criteria'                    // K - Buying criteria/notes
+  ];
+
+  // Setup headers with purple background (like Form_Responses)
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setValues([headers]);
+  headerRange.setFontWeight('bold');
+  headerRange.setBackground('#4A1F5C');
+  headerRange.setFontColor('white');
+  headerRange.setHorizontalAlignment('center');
+  headerRange.setVerticalAlignment('middle');
+  sheet.setRowHeight(1, 40);
+  sheet.setFrozenRows(1);
+
+  // Set column widths to match Dispo Workspace layout
+  sheet.setColumnWidth(1, 140);  // Timestamp
+  sheet.setColumnWidth(2, 150);  // Name
+  sheet.setColumnWidth(3, 120);  // Phone number
+  sheet.setColumnWidth(4, 180);  // Email
+  sheet.setColumnWidth(5, 120);  // Type of Buyer
+  sheet.setColumnWidth(6, 160);  // Asset Type
+  sheet.setColumnWidth(7, 180);  // Deal Preference
+  sheet.setColumnWidth(8, 140);  // Exit Strategy
+  sheet.setColumnWidth(9, 120);  // Market
+  sheet.setColumnWidth(10, 200); // City, County, or Zip-code(s)
+  sheet.setColumnWidth(11, 250); // Criteria
+}
+
+  
 }
 
 // ============================================================================
@@ -771,64 +843,39 @@ function setupDataValidation() {
     zipCodes.getRange('F2:F1000').setDataValidation(priorityRule);
   }
 
-  // Buyers List validations (matching dispo_workspace 3.0)
+  // Buyers List validations (matching Dispo Workspace 3.0 Buyer sheet)
   const buyers = ss.getSheetByName(CONFIG.SHEETS.BUYERS_LIST);
   if (buyers) {
-    // Type of Buyer (Column E) - Cash, Creative, or both
+    // Type of Buyer dropdown (Column E)
     const buyerTypeRule = SpreadsheetApp.newDataValidation()
-      .requireValueInList(['Creative', 'Cash', 'Cash, Creative'], true).build();
+      .requireValueInList(CONFIG.BUYER_TYPES, true).build();
     buyers.getRange('E2:E1000').setDataValidation(buyerTypeRule);
 
-    // Asset Type (Column F) - Multi-select options
+    // Asset Type dropdown (Column F) - allows multi-select via comma-separated values
     const assetTypeRule = SpreadsheetApp.newDataValidation()
-      .requireValueInList([
-        'Multi-Family',
-        'Single Family',
-        'RV Parks',
-        'Mobile Home Parks',
-        'Land',
-        'Multi-Family, Mobile Home Parks',
-        'Multi-Family, Single Family',
-        'Single Family, RV Park, Mobile Home Parks',
-        'Single Family, Land'
-      ], true).build();
+      .requireValueInList(CONFIG.BUYER_ASSET_TYPES, true)
+      .setAllowInvalid(true).build();
     buyers.getRange('F2:F1000').setDataValidation(assetTypeRule);
 
-    // Deal Preference (Column G) - Multi-select options
+    // Deal Preference dropdown (Column G) - allows multi-select via comma-separated values
     const dealPrefRule = SpreadsheetApp.newDataValidation()
-      .requireValueInList([
-        'Creative Financing',
-        'Cash',
-        'Seller Finance',
-        'Subject to',
-        'Hybrid',
-        'Creative Financing, Cash',
-        'Cash, Creative Financing, Seller Finance, Subject to, Hybrid'
-      ], true).build();
+      .requireValueInList(CONFIG.BUYER_DEAL_PREFERENCES, true)
+      .setAllowInvalid(true).build();
     buyers.getRange('G2:G1000').setDataValidation(dealPrefRule);
 
-    // Exit Strategy (Column H)
+    // Exit Strategy dropdown (Column H) - allows multi-select via comma-separated values
     const exitStratRule = SpreadsheetApp.newDataValidation()
-      .requireValueInList([
-        'Buy & Hold',
-        'Fix and Flip',
-        'Buy & Hold, Fix and Flip'
-      ], true).build();
+      .requireValueInList(CONFIG.BUYER_EXIT_STRATEGIES, true)
+      .setAllowInvalid(true).build();
     buyers.getRange('H2:H1000').setDataValidation(exitStratRule);
 
-    // Market (Column I) - State chips
+    // Market dropdown (Column I) - allows multi-select via comma-separated values
     const marketRule = SpreadsheetApp.newDataValidation()
-      .requireValueInList([
-        'FL',
-        'TN',
-        'TX',
-        'GA',
-        'FL, TN',
-        'FL, TX',
-        'TN, TX',
-        'FL, TN, TX',
-        'TN, TX'
-      ], true).build();
+      .requireValueInList(CONFIG.BUYER_MARKETS, true)
+      .setAllowInvalid(true).build();
+    buyers.getRange('I2:I1000').setDataValidation(marketRule);
+  }
+
     buyers.getRange('I2:I1000').setDataValidation(marketRule);
   }
 }
@@ -1227,6 +1274,11 @@ function importBuyersFromDispo() {
 
 /**
  * Import buyers from specified spreadsheet
+ * Source columns (Dispo Workspace 3.0 "Buyer" sheet):
+ *   A: Timestamp, B: Name, C: Phone number, D: Email, E: Type of Buyer,
+ *   F: Asset Type, G: Deal Preference, H: Exit Strategy, I: Market,
+ *   J: City/County/Zip-code(s), K: Criteria
+ * These map directly to our Buyers List columns.
  */
 function importBuyersFromSheet(spreadsheetId) {
   const ui = SpreadsheetApp.getUi();
@@ -1261,11 +1313,14 @@ function importBuyersFromSheet(spreadsheetId) {
     }
 
     // Copy data (skip header row from source)
-    const dataToImport = sourceData.slice(1);
+    // Columns map directly: Timestamp, Name, Phone, Email, Type of Buyer,
+    // Asset Type, Deal Preference, Exit Strategy, Market, City/County/Zip, Criteria
+    const dataToImport = sourceData.slice(1).filter(row => row.some(cell => cell !== ''));
+    const numCols = Math.min(dataToImport[0].length, 11); // Cap at 11 columns (A-K)
+
     if (dataToImport.length > 0) {
-      // Map source columns to destination columns (adjust based on your dispo workspace structure)
-      // This assumes similar column structure - adjust mapping as needed
-      buyerSheet.getRange(2, 1, dataToImport.length, dataToImport[0].length).setValues(dataToImport);
+      const trimmedData = dataToImport.map(row => row.slice(0, numCols));
+      buyerSheet.getRange(2, 1, trimmedData.length, numCols).setValues(trimmedData);
     }
 
     ui.alert(`Successfully imported ${dataToImport.length} buyers from Dispo Workspace!`);
@@ -1755,7 +1810,7 @@ function showHelp() {
       <li><b>Yearly KPIs</b> - Track all months</li>
       <li><b>Zip Codes</b> - Target markets</li>
       <li><b>Dashboard</b> - Overview</li>
-      <li><b>Buyers List</b> - Cash buyers (import from Dispo Workspace)</li>
+      <li><b>Buyers List</b> - Buyer database with type, asset preferences, deal preferences, markets & criteria (import from Dispo Workspace)</li>
     </ul>
     <h3>Automation</h3>
     <ul>
