@@ -174,12 +174,17 @@ function getZipCodePerformance(zipCode) {
 
 /**
  * Find buyers matching property criteria
- * @param {string} zipCode
- * @param {string} propertyType
- * @param {number} price
+ * New column structure (dispo_workspace 3.0):
+ * A: Timestamp, B: Name, C: Phone, D: Email, E: Type of Buyer,
+ * F: Asset Type, G: Deal Preference, H: Exit Strategy, I: Market,
+ * J: City/County/Zip, K: Criteria
+ *
+ * @param {string} zipCode - Zip code or market (state) to match
+ * @param {string} propertyType - Property type to match (Single Family, Multi-Family, etc.)
+ * @param {string} market - Optional state code (FL, TN, TX, GA)
  * @return {Array} Matching buyer names
  */
-function findMatchingBuyers(zipCode, propertyType, price) {
+function findMatchingBuyers(zipCode, propertyType, market) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const buyerSheet = ss.getSheetByName(CONFIG.SHEETS.BUYERS_LIST);
 
@@ -190,23 +195,31 @@ function findMatchingBuyers(zipCode, propertyType, price) {
 
   for (let i = 1; i < data.length; i++) {
     const buyer = {
-      name: data[i][2],
-      company: data[i][1],
-      preferredTypes: (data[i][6] || '').toString().toLowerCase(),
-      preferredZips: (data[i][7] || '').toString(),
-      minPrice: data[i][8] || 0,
-      maxPrice: data[i][9] || Infinity,
-      active: data[i][15]
+      name: data[i][1],                                    // B: Name
+      assetTypes: (data[i][5] || '').toString().toLowerCase(),  // F: Asset Type
+      buyerMarket: (data[i][8] || '').toString().toUpperCase(), // I: Market (FL, TN, TX)
+      locations: (data[i][9] || '').toString().toLowerCase(),   // J: City/County/Zip
+      criteria: (data[i][10] || '').toString().toLowerCase()    // K: Criteria
     };
 
-    if (buyer.active !== 'Yes') continue;
+    if (!buyer.name) continue; // Skip empty rows
 
-    const zipMatch = !buyer.preferredZips || buyer.preferredZips.includes(zipCode.toString());
-    const typeMatch = !buyer.preferredTypes || buyer.preferredTypes.includes((propertyType || '').toLowerCase());
-    const priceMatch = price >= buyer.minPrice && price <= buyer.maxPrice;
+    // Match by property type (Asset Type column)
+    const typeMatch = !propertyType ||
+      !buyer.assetTypes ||
+      buyer.assetTypes.includes((propertyType || '').toLowerCase());
 
-    if (zipMatch && typeMatch && priceMatch) {
-      matches.push(buyer.company || buyer.name);
+    // Match by market (state) or zip code
+    let locationMatch = true;
+    if (market) {
+      locationMatch = !buyer.buyerMarket || buyer.buyerMarket.includes(market.toUpperCase());
+    }
+    if (zipCode && buyer.locations) {
+      locationMatch = locationMatch || buyer.locations.includes(zipCode.toString());
+    }
+
+    if (typeMatch && locationMatch) {
+      matches.push(buyer.name);
     }
   }
 
@@ -215,11 +228,14 @@ function findMatchingBuyers(zipCode, propertyType, price) {
 
 /**
  * Custom formula to show matching buyers
- * Usage: =MATCHING_BUYERS(ZipCode, PropertyType, Price)
+ * Usage: =MATCHING_BUYERS(ZipCode, PropertyType, Market)
+ * @param {string} zipCode - Zip code to match against buyer locations
+ * @param {string} propertyType - Property type (Single Family, Multi-Family, etc.)
+ * @param {string} market - State code (FL, TN, TX, GA)
  * @customfunction
  */
-function MATCHING_BUYERS(zipCode, propertyType, price) {
-  const matches = findMatchingBuyers(zipCode, propertyType, price);
+function MATCHING_BUYERS(zipCode, propertyType, market) {
+  const matches = findMatchingBuyers(zipCode, propertyType, market);
   return matches.length > 0 ? matches.join(', ') : 'No matches';
 }
 

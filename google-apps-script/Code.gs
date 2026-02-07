@@ -618,14 +618,54 @@ function createBuyersListSheet(ss) {
     sheet = ss.insertSheet(CONFIG.SHEETS.BUYERS_LIST);
   }
 
+  // Headers matching dispo_workspace 3.0 Buyer sheet
   const headers = [
-    'Buyer ID', 'Company Name', 'Contact Name', 'Phone', 'Email', 'Buyer Type',
-    'Preferred Property Types', 'Preferred Zip Codes', 'Min Purchase Price', 'Max Purchase Price',
-    'Proof of Funds', 'Deals Closed', 'Last Deal Date', 'Rating', 'Notes', 'Active (Yes/No)'
+    'Timestamp',           // A
+    'Name',                // B
+    'Phone number',        // C
+    'Email',               // D
+    'Type of Buyer',       // E
+    'Asset Type',          // F
+    'Deal Preference',     // G
+    'Exit Strategy',       // H
+    'Market',              // I
+    'City, County, or Zip-code(s)', // J
+    'Criteria'             // K
   ];
 
-  setupSheetHeaders(sheet, headers, '#1F4A5C');
+  // Setup headers with purple background (like Form_Responses)
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setValues([headers]);
+  headerRange.setFontWeight('bold');
+  headerRange.setBackground('#4A1F5C');
+  headerRange.setFontColor('white');
+  headerRange.setHorizontalAlignment('center');
+  headerRange.setVerticalAlignment('middle');
+  sheet.setRowHeight(1, 40);
   sheet.setFrozenRows(1);
+
+  // Set column widths
+  sheet.setColumnWidth(1, 140);  // Timestamp
+  sheet.setColumnWidth(2, 120);  // Name
+  sheet.setColumnWidth(3, 120);  // Phone
+  sheet.setColumnWidth(4, 180);  // Email
+  sheet.setColumnWidth(5, 100);  // Type of Buyer
+  sheet.setColumnWidth(6, 120);  // Asset Type
+  sheet.setColumnWidth(7, 130);  // Deal Preference
+  sheet.setColumnWidth(8, 110);  // Exit Strategy
+  sheet.setColumnWidth(9, 100);  // Market
+  sheet.setColumnWidth(10, 200); // City/County/Zip
+  sheet.setColumnWidth(11, 200); // Criteria
+
+  // Pre-populate "Creative" as default in Type of Buyer (column E) for rows 2-100
+  const defaultValues = [];
+  for (let i = 0; i < 99; i++) {
+    defaultValues.push(['Creative']);
+  }
+  sheet.getRange('E2:E100').setValues(defaultValues);
+
+  // Set text wrapping for criteria and location columns
+  sheet.getRange('J2:K1000').setWrap(true);
 }
 
 // ============================================================================
@@ -731,21 +771,65 @@ function setupDataValidation() {
     zipCodes.getRange('F2:F1000').setDataValidation(priorityRule);
   }
 
-  // Buyers List validations
+  // Buyers List validations (matching dispo_workspace 3.0)
   const buyers = ss.getSheetByName(CONFIG.SHEETS.BUYERS_LIST);
   if (buyers) {
+    // Type of Buyer (Column E) - Cash, Creative, or both
     const buyerTypeRule = SpreadsheetApp.newDataValidation()
-      .requireValueInList(['Investor', 'Flipper', 'Landlord', 'Wholesaler', 'Other'], true).build();
-    buyers.getRange('F2:F1000').setDataValidation(buyerTypeRule);
+      .requireValueInList(['Creative', 'Cash', 'Cash, Creative'], true).build();
+    buyers.getRange('E2:E1000').setDataValidation(buyerTypeRule);
 
-    const yesNoRule = SpreadsheetApp.newDataValidation()
-      .requireValueInList(['Yes', 'No'], true).build();
-    buyers.getRange('K2:K1000').setDataValidation(yesNoRule);
-    buyers.getRange('P2:P1000').setDataValidation(yesNoRule);
+    // Asset Type (Column F) - Multi-select options
+    const assetTypeRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList([
+        'Multi-Family',
+        'Single Family',
+        'RV Parks',
+        'Mobile Home Parks',
+        'Land',
+        'Multi-Family, Mobile Home Parks',
+        'Multi-Family, Single Family',
+        'Single Family, RV Park, Mobile Home Parks',
+        'Single Family, Land'
+      ], true).build();
+    buyers.getRange('F2:F1000').setDataValidation(assetTypeRule);
 
-    const ratingRule = SpreadsheetApp.newDataValidation()
-      .requireValueInList(['A', 'B', 'C', 'D'], true).build();
-    buyers.getRange('N2:N1000').setDataValidation(ratingRule);
+    // Deal Preference (Column G) - Multi-select options
+    const dealPrefRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList([
+        'Creative Financing',
+        'Cash',
+        'Seller Finance',
+        'Subject to',
+        'Hybrid',
+        'Creative Financing, Cash',
+        'Cash, Creative Financing, Seller Finance, Subject to, Hybrid'
+      ], true).build();
+    buyers.getRange('G2:G1000').setDataValidation(dealPrefRule);
+
+    // Exit Strategy (Column H)
+    const exitStratRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList([
+        'Buy & Hold',
+        'Fix and Flip',
+        'Buy & Hold, Fix and Flip'
+      ], true).build();
+    buyers.getRange('H2:H1000').setDataValidation(exitStratRule);
+
+    // Market (Column I) - State chips
+    const marketRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList([
+        'FL',
+        'TN',
+        'TX',
+        'GA',
+        'FL, TN',
+        'FL, TX',
+        'TN, TX',
+        'FL, TN, TX',
+        'TN, TX'
+      ], true).build();
+    buyers.getRange('I2:I1000').setDataValidation(marketRule);
   }
 }
 
@@ -782,6 +866,89 @@ function setupConditionalFormatting() {
       .setRanges([statusRange]).build());
 
     pipeline.setConditionalFormatRules(rules);
+  }
+
+  // Buyers List conditional formatting (matching dispo_workspace 3.0)
+  const buyers = ss.getSheetByName(CONFIG.SHEETS.BUYERS_LIST);
+  if (buyers) {
+    const buyerRules = [];
+
+    // Type of Buyer (Column E) - Creative = green, Cash = red/orange
+    const typeRange = buyers.getRange('E2:E1000');
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('Creative')
+      .setBackground('#E8F5E9')
+      .setFontColor('#2E7D32')
+      .setRanges([typeRange]).build());
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('Cash')
+      .setBackground('#FFEBEE')
+      .setFontColor('#C62828')
+      .setRanges([typeRange]).build());
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextContains('Cash, Creative')
+      .setBackground('#FFF3E0')
+      .setFontColor('#E65100')
+      .setRanges([typeRange]).build());
+
+    // Asset Type (Column F) - Yellow/gold background
+    const assetRange = buyers.getRange('F2:F1000');
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenCellNotEmpty()
+      .setBackground('#FFF9C4')
+      .setFontColor('#F57F17')
+      .setRanges([assetRange]).build());
+
+    // Deal Preference (Column G) - Teal/green background
+    const dealRange = buyers.getRange('G2:G1000');
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenCellNotEmpty()
+      .setBackground('#E0F2F1')
+      .setFontColor('#00695C')
+      .setRanges([dealRange]).build());
+
+    // Exit Strategy (Column H) - Blue text
+    const exitRange = buyers.getRange('H2:H1000');
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenCellNotEmpty()
+      .setFontColor('#1565C0')
+      .setRanges([exitRange]).build());
+
+    // Market (Column I) - Color by state
+    const marketRange = buyers.getRange('I2:I1000');
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('FL')
+      .setBackground('#FFCDD2')
+      .setFontColor('#B71C1C')
+      .setRanges([marketRange]).build());
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('TN')
+      .setBackground('#C8E6C9')
+      .setFontColor('#1B5E20')
+      .setRanges([marketRange]).build());
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('TX')
+      .setBackground('#FFE0B2')
+      .setFontColor('#E65100')
+      .setRanges([marketRange]).build());
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('GA')
+      .setBackground('#B2DFDB')
+      .setFontColor('#004D40')
+      .setRanges([marketRange]).build());
+    // Multi-state markets
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextContains('FL, TN, TX')
+      .setBackground('#E1BEE7')
+      .setFontColor('#6A1B9A')
+      .setRanges([marketRange]).build());
+    buyerRules.push(SpreadsheetApp.newConditionalFormatRule()
+      .whenTextContains('TN, TX')
+      .setBackground('#DCEDC8')
+      .setFontColor('#33691E')
+      .setRanges([marketRange]).build());
+
+    buyers.setConditionalFormatRules(buyerRules);
   }
 }
 
