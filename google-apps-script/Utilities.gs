@@ -174,9 +174,14 @@ function getZipCodePerformance(zipCode) {
 
 /**
  * Find buyers matching property criteria
- * @param {string} zipCode
- * @param {string} propertyType
- * @param {number} price
+ * Buyers List columns (Dispo Workspace 3.0 format):
+ *   0: Timestamp, 1: Name, 2: Phone, 3: Email, 4: Type of Buyer,
+ *   5: Asset Type, 6: Deal Preference, 7: Exit Strategy, 8: Market,
+ *   9: City/County/Zip-code(s), 10: Criteria
+ *
+ * @param {string} zipCode - Property zip code
+ * @param {string} propertyType - Property type (e.g., "Single Family")
+ * @param {number} price - Property price (used for criteria text search)
  * @return {Array} Matching buyer names
  */
 function findMatchingBuyers(zipCode, propertyType, price) {
@@ -189,24 +194,25 @@ function findMatchingBuyers(zipCode, propertyType, price) {
   const matches = [];
 
   for (let i = 1; i < data.length; i++) {
-    const buyer = {
-      name: data[i][2],
-      company: data[i][1],
-      preferredTypes: (data[i][6] || '').toString().toLowerCase(),
-      preferredZips: (data[i][7] || '').toString(),
-      minPrice: data[i][8] || 0,
-      maxPrice: data[i][9] || Infinity,
-      active: data[i][15]
-    };
+    const name = (data[i][1] || '').toString().trim();
+    if (!name) continue; // Skip empty rows
 
-    if (buyer.active !== 'Yes') continue;
+    const assetTypes = (data[i][5] || '').toString().toLowerCase();
+    const market = (data[i][8] || '').toString().toUpperCase();
+    const locations = (data[i][9] || '').toString().toLowerCase();
 
-    const zipMatch = !buyer.preferredZips || buyer.preferredZips.includes(zipCode.toString());
-    const typeMatch = !buyer.preferredTypes || buyer.preferredTypes.includes((propertyType || '').toLowerCase());
-    const priceMatch = price >= buyer.minPrice && price <= buyer.maxPrice;
+    // Match on asset type (property type must appear in buyer's asset types)
+    const typeMatch = !assetTypes || !propertyType ||
+      assetTypes.includes((propertyType || '').toLowerCase());
 
-    if (zipMatch && typeMatch && priceMatch) {
-      matches.push(buyer.company || buyer.name);
+    // Match on location (zip code appears in market states or city/zip text)
+    const zipStr = (zipCode || '').toString();
+    const locationMatch = !zipStr ||
+      locations.includes(zipStr) ||
+      market.includes(zipStr);
+
+    if (typeMatch && locationMatch) {
+      matches.push(name);
     }
   }
 
