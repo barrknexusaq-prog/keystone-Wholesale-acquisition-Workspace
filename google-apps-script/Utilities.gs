@@ -192,11 +192,11 @@ function findMatchingBuyers(zipCode, propertyType, price) {
     const buyer = {
       name: data[i][2],
       company: data[i][1],
-      preferredTypes: (data[i][6] || '').toString().toLowerCase(),
-      preferredZips: (data[i][7] || '').toString(),
-      minPrice: data[i][8] || 0,
-      maxPrice: data[i][9] || Infinity,
-      active: data[i][15]
+      preferredTypes: (data[i][12] || '').toString().toLowerCase(),
+      preferredZips: (data[i][13] || '').toString(),
+      minPrice: data[i][14] || 0,
+      maxPrice: data[i][15] || Infinity,
+      active: data[i][21]
     };
 
     if (buyer.active !== 'Yes') continue;

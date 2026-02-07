@@ -46,6 +46,13 @@ const CONFIG = {
   // Disposition Options
   DISPOSITION: ['Assigned', 'Double Close', 'Wholetail', 'Fix & Flip', 'Buy & Hold', 'Dead Deal'],
 
+  // Buyer Fields (from Dispo Workspace)
+  BUYER_TYPE_OF_BUYER: ['Creative', 'Cash'],
+  BUYER_ASSET_TYPES: ['Multi-Family', 'Mobile Home', 'Single Family', 'RV Park', 'Land'],
+  BUYER_DEAL_PREFERENCES: ['Creative Financing', 'Cash', 'Seller Finance', 'Subject to', 'Hybrid'],
+  BUYER_EXIT_STRATEGIES: ['Buy & Hold', 'Fix and Flip'],
+  BUYER_MARKETS: ['FL', 'GA', 'TN', 'TX'],
+
   // Monthly Goals
   MONTHLY_GOALS: {
     LEADS_GENERATED: 100,
@@ -620,6 +627,8 @@ function createBuyersListSheet(ss) {
 
   const headers = [
     'Buyer ID', 'Company Name', 'Contact Name', 'Phone', 'Email', 'Buyer Type',
+    'Type of Buyer', 'Asset Type', 'Deal Preference', 'Exit Strategy',
+    'Market', 'City/County/Zip-code(s)',
     'Preferred Property Types', 'Preferred Zip Codes', 'Min Purchase Price', 'Max Purchase Price',
     'Proof of Funds', 'Deals Closed', 'Last Deal Date', 'Rating', 'Notes', 'Active (Yes/No)'
   ];
@@ -734,18 +743,46 @@ function setupDataValidation() {
   // Buyers List validations
   const buyers = ss.getSheetByName(CONFIG.SHEETS.BUYERS_LIST);
   if (buyers) {
+    // Buyer Type (Column F)
     const buyerTypeRule = SpreadsheetApp.newDataValidation()
       .requireValueInList(['Investor', 'Flipper', 'Landlord', 'Wholesaler', 'Other'], true).build();
     buyers.getRange('F2:F1000').setDataValidation(buyerTypeRule);
 
+    // Type of Buyer (Column G)
+    const typeOfBuyerRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(CONFIG.BUYER_TYPE_OF_BUYER, true).build();
+    buyers.getRange('G2:G1000').setDataValidation(typeOfBuyerRule);
+
+    // Asset Type (Column H)
+    const assetTypeRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(CONFIG.BUYER_ASSET_TYPES, true).build();
+    buyers.getRange('H2:H1000').setDataValidation(assetTypeRule);
+
+    // Deal Preference (Column I)
+    const dealPrefRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(CONFIG.BUYER_DEAL_PREFERENCES, true).build();
+    buyers.getRange('I2:I1000').setDataValidation(dealPrefRule);
+
+    // Exit Strategy (Column J)
+    const exitStratRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(CONFIG.BUYER_EXIT_STRATEGIES, true).build();
+    buyers.getRange('J2:J1000').setDataValidation(exitStratRule);
+
+    // Market (Column K)
+    const marketRule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(CONFIG.BUYER_MARKETS, true).build();
+    buyers.getRange('K2:K1000').setDataValidation(marketRule);
+
+    // Proof of Funds (Column Q) and Active (Column V)
     const yesNoRule = SpreadsheetApp.newDataValidation()
       .requireValueInList(['Yes', 'No'], true).build();
-    buyers.getRange('K2:K1000').setDataValidation(yesNoRule);
-    buyers.getRange('P2:P1000').setDataValidation(yesNoRule);
+    buyers.getRange('Q2:Q1000').setDataValidation(yesNoRule);
+    buyers.getRange('V2:V1000').setDataValidation(yesNoRule);
 
+    // Rating (Column T)
     const ratingRule = SpreadsheetApp.newDataValidation()
       .requireValueInList(['A', 'B', 'C', 'D'], true).build();
-    buyers.getRange('N2:N1000').setDataValidation(ratingRule);
+    buyers.getRange('T2:T1000').setDataValidation(ratingRule);
   }
 }
 
@@ -1093,15 +1130,44 @@ function importBuyersFromSheet(spreadsheetId) {
       buyerSheet.getRange(2, 1, lastRow - 1, buyerSheet.getLastColumn()).clear();
     }
 
-    // Copy data (skip header row from source)
-    const dataToImport = sourceData.slice(1);
-    if (dataToImport.length > 0) {
-      // Map source columns to destination columns (adjust based on your dispo workspace structure)
-      // This assumes similar column structure - adjust mapping as needed
-      buyerSheet.getRange(2, 1, dataToImport.length, dataToImport[0].length).setValues(dataToImport);
+    // Map source columns from Dispo Workspace Buyer sheet to our Buyers List
+    // Source: A=Timestamp, B=Name, C=Phone, D=Email, E=Type of Buyer,
+    //         F=Asset Type, G=Deal Preference, H=Exit Strategy, I=Market,
+    //         J=City/County/Zip-code(s)
+    const dataToImport = sourceData.slice(1).filter(row => row[1]); // Skip header and empty rows
+    const mappedData = dataToImport.map((row, idx) => {
+      const buyerId = 'BUY-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyMMdd') + '-' + (idx + 1);
+      return [
+        buyerId,          // A: Buyer ID
+        '',               // B: Company Name
+        row[1] || '',     // C: Contact Name (from Name)
+        row[2] || '',     // D: Phone (from Phone number)
+        row[3] || '',     // E: Email
+        '',               // F: Buyer Type (Investor/Flipper/etc.)
+        row[4] || '',     // G: Type of Buyer (Creative/Cash)
+        row[5] || '',     // H: Asset Type
+        row[6] || '',     // I: Deal Preference
+        row[7] || '',     // J: Exit Strategy
+        row[8] || '',     // K: Market (state abbreviations)
+        row[9] || '',     // L: City/County/Zip-code(s)
+        row[5] || '',     // M: Preferred Property Types (from Asset Type)
+        '',               // N: Preferred Zip Codes
+        '',               // O: Min Purchase Price
+        '',               // P: Max Purchase Price
+        '',               // Q: Proof of Funds
+        '',               // R: Deals Closed
+        '',               // S: Last Deal Date
+        '',               // T: Rating
+        '',               // U: Notes
+        'Yes'             // V: Active (Yes/No)
+      ];
+    });
+
+    if (mappedData.length > 0) {
+      buyerSheet.getRange(2, 1, mappedData.length, mappedData[0].length).setValues(mappedData);
     }
 
-    ui.alert(`Successfully imported ${dataToImport.length} buyers from Dispo Workspace!`);
+    ui.alert(`Successfully imported ${mappedData.length} buyers from Dispo Workspace!`);
 
   } catch (error) {
     ui.alert('Error importing buyers: ' + error.message +
